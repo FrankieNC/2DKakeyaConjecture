@@ -10,20 +10,40 @@ namespace Besicovitch
 
 open Set Real Topology Metric Bornology
 
--- Formalise the entirity of Section 2. Section 4 is nonsense
+-- Formalise the entirety of Section 2. Section 4 is nonsense
 
-def IsKakeya {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (s : Set E) : Prop :=
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+-- @FrankieNC: you should add the stuff you proved about this from CW3 to this section
+/-- A subset of a normed real vector space `E` is Kakeya if it contains a segment of unit length in
+every direction. -/
+def IsKakeya (s : Set E) : Prop :=
     ∀ v : E, ‖v‖ = 1 → ∃ x : E, segment ℝ x (x + v) ⊆ s
 
-def IsBesicovitch {E : Type*}
-  [NormedAddCommGroup E] [NormedSpace ℝ E] {n : ℕ} (s : Set (Fin n → ℝ)) : Prop :=
-    IsKakeya s ∧ MeasureTheory.volume s = 0
+/-- The universal set is Kakeya. -/
+lemma univ_isKakeya : IsKakeya (Set.univ : Set E) := by
+  sorry -- @FrankieNC: prove this
 
--- The rectangle [-1,1] × [0,1]
-def rectangle : Set (ℝ × ℝ) :=
-  { p | p.1 ∈ Icc (-1 : ℝ) 1 ∧ p.2 ∈ Icc 0 1 }
+/-- add docstring -/
+lemma IsKakeya.subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
+  sorry -- @FrankieNC: prove this
 
--- Segment from (x₁, 0) to (x₂, 1)
+/-- add docstring -/
+lemma IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
+  sorry
+  -- @FrankieNC: prove this
+  -- hint: use `norm_sub_le_of_mem_segment`
+
+end
+
+section
+
+/-- The rectangle [-1,1] × [0,1] -/
+def rectangle : Set (ℝ × ℝ) := Icc (-1) 1 ×ˢ Icc 0 1
+
+/-- The segment from (x₁, 0) to (x₂, 1). -/
 def segment01 (x₁ x₂ : ℝ) : Set (ℝ × ℝ) :=
   segment ℝ (x₁, 0) (x₂, 1)
 
@@ -31,13 +51,10 @@ def segment01 (x₁ x₂ : ℝ) : Set (ℝ × ℝ) :=
 def P_collection : Set (Set (ℝ × ℝ)) :=
   { P | IsClosed P ∧ P ⊆ rectangle ∧
     -- (i) P is a union of line segments from (x₁, 0) to (x₂, 1)
-    ∃ A : Set (ℝ × ℝ), A ⊆ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 ∧
-      P = ⋃ (p ∈ A), segment01 p.1 p.2 ∧
-    -- P = ⋃ (x₁ ∈ Icc (-1 : ℝ) 1) (x₂ ∈ Icc (-1 : ℝ) 1), segment01 x₁ x₂ ∧
-    -- (∀ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 → x₂ ∈ Icc (-1) 1 →
-      -- segment01 x₁ x₂ ⊆ P ∨ segment01 x₁ x₂ ∩ P = ∅) ∧
+    (∃ A : Set (ℝ × ℝ), A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1 ∧
+      P = ⋃ (p ∈ A), segment01 p.1 p.2) ∧
     -- (ii) for all v with |v| ≤ 1/2, there exists x₁, x₂ ∈ [-1,1] with x₂ - x₁ = v and segment ⊆ P
-    (∀ v : ℝ, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1
+    (∀ v : ℝ, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1
         ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
 
 -- Define 𝒦 as the collection of non-empty compact subsets of ℝ²
@@ -46,6 +63,7 @@ def K_collection : Set (Set (ℝ × ℝ)) :=
 
 lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
     ∃ x ∈ Icc (-1 : ℝ) 1, segment01 x x ⊆ P := by
+  -- BM: I broke this because I changed P_collection to be more correct
   obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
   specialize h₅b 0 (by norm_num)
   obtain ⟨x₁, x₂, hx₁, hx₂, h_diff, h_seg⟩ := h₅b
@@ -63,6 +81,7 @@ lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
 --     exact left_mem_segment ℝ (x, 0) (x, 1)
 --   exact ⟨(x, 0), hseg h_left⟩
 
+-- BM: I'd phrase this as P_collection ⊆ K_collection
 lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
     P ∈ K_collection := by
   -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
@@ -71,6 +90,7 @@ lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collecti
     refine ⟨(x, 0), hseg (left_mem_segment ℝ (x, 0) (x, 1))⟩
   have h_compact : IsCompact P := by
     rw [isCompact_iff_isClosed_bounded]
+    -- BM: I broke this because I changed P_collection to be more correct
     obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
     constructor
     · exact h₁
@@ -105,6 +125,7 @@ lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collecti
 
 open Filter
 
+-- BM: Don't you want to assume K ∈ 𝒦 here?
 /--
 If `P n ∈ P_collection` for all `n` and `hausdorffDist (P n) K → 0`, then `K` satisfies
 property (i): for every `k ∈ K` there are `x₁,x₂ ∈ [-1,1]` with
@@ -123,5 +144,7 @@ lemma P_collection.hausdorff_limit_property_i
     · exact isCompact_Icc
     · exact isCompact_Icc
   sorry
+
+end
 
 end Besicovitch
