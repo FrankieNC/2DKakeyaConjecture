@@ -24,17 +24,97 @@ def IsKakeya (s : Set E) : Prop :=
 
 /-- The universal set is Kakeya. -/
 lemma univ_isKakeya : IsKakeya (Set.univ : Set E) := by
-  sorry -- @FrankieNC: prove this
+  simp [IsKakeya]
 
-/-- add docstring -/
+/-- If `s` is Kakeya and `s ⊆ t`, then `t` is Kakeya. -/
 lemma IsKakeya.subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
-  sorry -- @FrankieNC: prove this
+  intro v hv
+  rcases h v hv with ⟨x, hx⟩
+  exact ⟨x, hx.trans hs⟩
+  -- exact Exists.intro x fun ⦃a⦄ a_1 ↦ hs (hx a_1)
 
-/-- add docstring -/
+/-- The closed unit ball is Kakeya. -/
 lemma IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
-  sorry
+  intro v hv
+  use -v
+  intro y hy
+  -- apply norm_sub_le_of_mem_segment at hy
   -- @FrankieNC: prove this
   -- hint: use `norm_sub_le_of_mem_segment`
+
+/-- In a nontrivial normed space, any Kakeya set is nonempty. -/
+lemma IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
+  rcases exists_pair_ne E with ⟨a, b, hab⟩
+  let x := a - b
+  have hx : x ≠ 0 := by
+    sorry
+  have hpos : 0 < ‖x‖ := norm_pos_iff.mpr hx
+  let v := ‖x‖⁻¹ • x
+  have hv : ‖v‖ = 1 := by
+    sorry
+  rcases h v hv with ⟨y, hy⟩
+  use y
+  exact hy (left_mem_segment ℝ y (y + v))
+
+/--
+A reformulation of the Kakeya condition: it suffices to check the existence of
+a segment for all vectors with norm at most 1, rather than exactly 1.
+-/
+theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
+    IsKakeya s ↔ ∀ v : E, ‖v‖ ≤ 1 → ∃ x : E, segment ℝ x (x + v) ⊆ s := by
+  constructor
+  -- First, prove: IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x+v ⊆ s
+  · intro h_kakeya v hv
+    rw [IsKakeya] at h_kakeya
+
+    -- Case: v = 0
+    by_cases h₀ : v = 0
+    · rw [h₀]
+      simp only [add_zero, segment_same, Set.singleton_subset_iff]
+      -- We still need to find some z, w such that segment z z+w ⊆ s
+      obtain ⟨w, hw⟩ : ∃ v : E, ‖v‖ = 1 := by
+        apply exists_norm_eq -- E is nontrivial, so such a unit vector exists
+        positivity
+      specialize h_kakeya w hw
+      rcases h_kakeya with ⟨z, hz⟩
+      use z
+      apply hz
+      exact left_mem_segment ℝ z (z + w) -- any point on a segment lies in the segment
+
+    -- Case: v ≠ 0
+    · set u := ‖v‖⁻¹ • v with hu -- rescale v to a unit vector u
+      have h₁ : ‖v‖ ≠ 0 := by
+        contrapose! h₀
+        rw [norm_eq_zero] at h₀
+        exact h₀
+      -- Now u has norm 1
+      have h₂ : ‖u‖ = 1 := by
+        rw [hu]
+        rw [norm_smul, norm_inv, norm_norm]
+        field_simp
+      -- By IsKakeya, s contains segment in direction u
+      obtain ⟨x, hx⟩ := h_kakeya u h₂
+      use x
+
+      -- We want to show: segment x x+v ⊆ segment x x+u
+      -- Since v is a scalar multiple of u, both segments lie along same ray
+      have h₃ : segment ℝ x (x + v) ⊆ segment ℝ x (x + u) := by
+        intro y hy
+        refine mem_segment_iff_sameRay.mpr ?_
+        rw [SameRay]
+        right
+        right
+        -- Here we need to figure out the scalars greater than zero such that
+        -- the two vectors are multiple of each other
+        sorry
+      -- Apply inclusion of segments to conclude result
+      exact fun ⦃a⦄ a_1 ↦ hx (h₃ a_1)
+
+  -- Converse: ∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s
+  · intro h_segment v hv
+    specialize h_segment v
+    apply h_segment
+    exact le_of_eq hv
 
 end
 
@@ -64,9 +144,9 @@ def K_collection : Set (Set (ℝ × ℝ)) :=
 lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
     ∃ x ∈ Icc (-1 : ℝ) 1, segment01 x x ⊆ P := by
   -- BM: I broke this because I changed P_collection to be more correct
-  obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
-  specialize h₅b 0 (by norm_num)
-  obtain ⟨x₁, x₂, hx₁, hx₂, h_diff, h_seg⟩ := h₅b
+  obtain ⟨_, _, _, h⟩ := hP
+  specialize h 0 (by norm_num)
+  obtain ⟨x₁, x₂, hx₁, hx₂, h_diff, h_seg⟩ := h
   have : x₁ = x₂ := by linarith [h_diff]
   subst this
   exact ⟨x₁, hx₁, h_seg⟩
@@ -91,7 +171,8 @@ lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collecti
   have h_compact : IsCompact P := by
     rw [isCompact_iff_isClosed_bounded]
     -- BM: I broke this because I changed P_collection to be more correct
-    obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
+    obtain ⟨h₁, h₂, _⟩ := hP
+    -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
     constructor
     · exact h₁
     · rw [isBounded_iff]
