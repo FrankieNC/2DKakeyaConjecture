@@ -38,21 +38,30 @@ lemma IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
   intro v hv
   use -v
   intro y hy
-  -- apply norm_sub_le_of_mem_segment at hy
-  -- @FrankieNC: prove this
-  -- hint: use `norm_sub_le_of_mem_segment`
+  calc
+    dist y 0 = ‖y - 0‖ := by aesop
+    _ ≤ ‖(-v) - 0‖ := by
+      apply norm_sub_le_of_mem_segment
+      simp only [neg_add_cancel] at hy
+      rw [segment_symm]
+      exact hy
+    _ = ‖v‖ := by simp [norm_neg]
+    _ = 1 := hv
 
 /-- In a nontrivial normed space, any Kakeya set is nonempty. -/
 lemma IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
   rcases exists_pair_ne E with ⟨a, b, hab⟩
-  let x := a - b
+  set x := a - b with hx
   have hx : x ≠ 0 := by
-    sorry
+    intro h₀; apply hab
+    simpa [hx] using sub_eq_zero.1 h₀
   have hpos : 0 < ‖x‖ := norm_pos_iff.mpr hx
-  let v := ‖x‖⁻¹ • x
-  have hv : ‖v‖ = 1 := by
-    sorry
-  rcases h v hv with ⟨y, hy⟩
+  set v := ‖x‖⁻¹ • x with hv
+  have hv_norm : ‖v‖ = 1 := by
+    rw [hv]
+    simp only [norm_smul, norm_inv, norm_norm]
+    aesop -- @b-mehta I am doing this at ungodly hours and I am too lazy to not use `aesop`
+  rcases h v hv_norm with ⟨y, hy⟩
   use y
   exact hy (left_mem_segment ℝ y (y + v))
 
@@ -106,6 +115,7 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
         right
         -- Here we need to figure out the scalars greater than zero such that
         -- the two vectors are multiple of each other
+        -- @b-mehta Could you finish this for us?
         sorry
       -- Apply inclusion of segments to conclude result
       exact fun ⦃a⦄ a_1 ↦ hx (h₃ a_1)
@@ -162,8 +172,51 @@ lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
 --   exact ⟨(x, 0), hseg h_left⟩
 
 -- BM: I'd phrase this as P_collection ⊆ K_collection
-lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
-    P ∈ K_collection := by
+-- lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
+--     P ∈ K_collection := by
+--   -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
+--   have h_nonempty : P.Nonempty := by
+--     rcases P_isNonempty hP with ⟨x, hx, hseg⟩
+--     refine ⟨(x, 0), hseg (left_mem_segment ℝ (x, 0) (x, 1))⟩
+--   have h_compact : IsCompact P := by
+--     rw [isCompact_iff_isClosed_bounded]
+--     -- BM: I broke this because I changed P_collection to be more correct
+--     obtain ⟨h₁, h₂, _⟩ := hP
+--     -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
+--     constructor
+--     · exact h₁
+--     · rw [isBounded_iff]
+--       use 10
+--       intro x hx y hy
+--       have ⟨hfx1, hfx2⟩ := h₂ hx
+--       have ⟨hfy1, hfy2⟩ := h₂ hy
+--       have hx_bound : |x.1 - y.1| ≤ 2 := by
+--         calc
+--           |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
+--           _ ≤ 1 + 1 := by
+--             have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+--             have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
+--             (expose_names; exact add_le_add this_1 this)
+--           _ = 2 := by norm_num
+--       have hy_bound : |x.2 - y.2| ≤ 2 := by
+--         calc
+--           |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
+--           _ ≤ 1 + 1 := by
+--             exact add_le_add
+--               (abs_le.2 ⟨by linarith [hfx2.1], hfx2.2⟩)
+--               (abs_le.2 ⟨by linarith [hfy2.1], hfy2.2⟩)
+--           _ = 2 := by norm_num
+--       calc
+--         dist x y = ‖x - y‖ := rfl
+--         _ ≤ |(x - y).1| + |(x - y).2| := by aesop
+--         _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
+--         _ ≤ 10 := by norm_num
+--   rw [K_collection]
+--   exact mem_sep h_nonempty h_compact
+
+lemma P_collection_sub_K_collection :
+    P_collection ⊆ K_collection := by
+  intro P hP
   -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
   have h_nonempty : P.Nonempty := by
     rcases P_isNonempty hP with ⟨x, hx, hseg⟩
@@ -201,8 +254,9 @@ lemma P_collection_in_K_collection {P : Set (ℝ × ℝ)} (hP : P ∈ P_collecti
         _ ≤ |(x - y).1| + |(x - y).2| := by aesop
         _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
         _ ≤ 10 := by norm_num
-  rw [K_collection]
   exact mem_sep h_nonempty h_compact
+
+-- Need to prove K_collection with hausdorffDist is complete
 
 open Filter
 
@@ -215,6 +269,7 @@ property (i): for every `k ∈ K` there are `x₁,x₂ ∈ [-1,1]` with
 lemma P_collection.hausdorff_limit_property_i
   {P : ℕ → Set (ℝ × ℝ)} {K : Set (ℝ × ℝ)}
   (hP : ∀ n, P n ∈ P_collection)
+  (hK : K ∈ K_collection)
   (hKlim : Tendsto (fun n ↦ hausdorffDist (P n) K) atTop (𝓝 0)) :
   ∀ k ∈ K, ∃ x₁ ∈ Icc (-1 : ℝ) 1, ∃ x₂ ∈ Icc (-1 : ℝ) 1,
     segment01 x₁ x₂ ⊆ K ∧ k ∈ segment01 x₁ x₂ := by
