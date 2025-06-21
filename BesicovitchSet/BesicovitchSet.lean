@@ -27,14 +27,14 @@ lemma univ_isKakeya : IsKakeya (Set.univ : Set E) := by
   simp [IsKakeya]
 
 /-- If `s` is Kakeya and `s ⊆ t`, then `t` is Kakeya. -/
-lemma IsKakeya.subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
+theorem IsKakeya.subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
   intro v hv
   rcases h v hv with ⟨x, hx⟩
   exact ⟨x, hx.trans hs⟩
   -- exact Exists.intro x fun ⦃a⦄ a_1 ↦ hs (hx a_1)
 
 /-- The closed unit ball is Kakeya. -/
-lemma IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
+theorem IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
   intro v hv
   use -v
   intro y hy
@@ -49,7 +49,7 @@ lemma IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
     _ = 1 := hv
 
 /-- In a nontrivial normed space, any Kakeya set is nonempty. -/
-lemma IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
+theorem IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
   rcases exists_pair_ne E with ⟨a, b, hab⟩
   set x := a - b with hx
   have hx : x ≠ 0 := by
@@ -257,6 +257,17 @@ lemma P_collection_sub_K_collection :
   exact mem_sep h_nonempty h_compact
 
 -- Need to prove K_collection with hausdorffDist is complete
+
+-- @b-mehta I have no idea how to do this
+instance K_collection.MetricSpace [ProperSpace (ℝ × ℝ)] :
+    MetricSpace (Subtype K_collection) := by
+  sorry
+
+/-- Under this Hausdorff metric, the `K_collection` is a complete space. -/
+theorem K_collection_CompleteSpace [ProperSpace (ℝ × ℝ)] :
+    CompleteSpace (Subtype K_collection) := by
+  sorry
+
 
 open Filter
 
