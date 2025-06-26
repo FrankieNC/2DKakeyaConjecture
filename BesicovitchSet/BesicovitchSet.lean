@@ -8,7 +8,7 @@ import Mathlib
 
 namespace Besicovitch
 
-open Set Real Topology Metric Bornology
+open Set Real Topology Metric Bornology TopologicalSpace
 
 -- Formalise the entirety of Section 2. Section 4 is nonsense
 
@@ -148,6 +148,81 @@ def P_collection : Set (Set (ℝ × ℝ)) :=
         ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
 
 -- Define 𝒦 as the collection of non-empty compact subsets of ℝ²
+def P_collection' : Set (NonemptyCompacts (ℝ × ℝ)) :=
+  { P | IsClosed (P : Set (ℝ × ℝ)) ∧ (P : Set (ℝ × ℝ)) ⊆ rectangle ∧
+    -- (i) P is a union of line segments from (x₁, 0) to (x₂, 1)
+    (∃ A : Set (ℝ × ℝ), A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1 ∧
+      P = ⋃ (p ∈ A), segment01 p.1 p.2) ∧
+    -- (ii) for all v with |v| ≤ 1/2, there exists x₁, x₂ ∈ [-1,1] with x₂ - x₁ = v and segment ⊆ P
+    (∀ v : ℝ, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1
+        ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
+
+/-- The carrier image of `P_collection'` recovers the original set-level collection `P_collection`. -/
+theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
+  ext P
+  constructor
+  · rintro ⟨Q, hQ, rfl⟩
+    exact hQ
+  · intro hP
+    have h_compact : IsCompact P := by
+      rw [isCompact_iff_isClosed_bounded]
+      obtain ⟨h₁, h₂, _⟩ := hP
+      constructor
+      · exact h₁
+      · rw [isBounded_iff]
+        use 10
+        intro x hx y hy
+        have ⟨hfx1, hfx2⟩ := h₂ hx
+        have ⟨hfy1, hfy2⟩ := h₂ hy
+        have hx_bound : |x.1 - y.1| ≤ 2 := by
+          calc
+            |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
+            _ ≤ 1 + 1 := by
+              have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+              have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
+              (expose_names; exact add_le_add this_1 this)
+            _ = 2 := by norm_num
+        have hy_bound : |x.2 - y.2| ≤ 2 := by
+          calc
+            |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
+            _ ≤ 1 + 1 := by
+              apply add_le_add
+              · apply abs_le.2
+                constructor -- From here on it is all Yuming
+                · have : 0 ≤ x.2 := by aesop
+                  have : (-1 : ℝ) ≤ 0 := by norm_num
+                  expose_names; exact le_trans this this_1
+                · aesop
+              · apply abs_le.2
+                constructor
+                · have : 0 ≤ y.2 := by aesop
+                  have : (-1 : ℝ) ≤ 0 := by norm_num
+                  expose_names; exact le_trans this this_1
+                · aesop
+            _ = 2 := by norm_num
+        calc
+          dist x y = ‖x - y‖ := rfl
+          _ ≤ |(x - y).1| + |(x - y).2| := by aesop
+          _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
+          _ ≤ 10 := by norm_num
+    have h_nonempty : P.Nonempty := by
+      have h_seg_exists : ∃ x ∈ Icc (-1 : ℝ) 1, segment01 x x ⊆ P := by
+        obtain ⟨_, _, _, h⟩ := hP
+        specialize h 0 (by norm_num)
+        obtain ⟨x₁, x₂, h₁, _, h₂⟩ := h
+        have : x₁ = x₂ := by linarith [h₂]
+        subst this
+        obtain ⟨_, h₂⟩ := h₂
+        exact ⟨x₁, h₁, h₂⟩
+      rcases h_seg_exists with ⟨x, hx, h_seg⟩
+      use (x, 0)
+      exact h_seg (left_mem_segment ℝ (x, 0) (x, 1))
+    simp only [mem_image]
+    let Q : NonemptyCompacts (ℝ × ℝ) := ⟨⟨P, h_compact⟩, h_nonempty⟩
+    use Q
+    exact ⟨hP, rfl⟩
+
+-- Define 𝒦 as the collection of non-empty compact subsets of ℝ²
 def K_collection : Set (Set (ℝ × ℝ)) :=
   { K | K.Nonempty ∧ IsCompact K }
 
@@ -214,6 +289,8 @@ lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
 --   rw [K_collection]
 --   exact mem_sep h_nonempty h_compact
 
+
+
 lemma P_collection_sub_K_collection :
     P_collection ⊆ K_collection := by
   intro P hP
@@ -255,19 +332,6 @@ lemma P_collection_sub_K_collection :
         _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
         _ ≤ 10 := by norm_num
   exact mem_sep h_nonempty h_compact
-
--- Need to prove K_collection with hausdorffDist is complete
-
--- @b-mehta I have no idea how to do this
-instance K_collection.MetricSpace [ProperSpace (ℝ × ℝ)] :
-    MetricSpace (Subtype K_collection) := by
-  sorry
-
-/-- Under this Hausdorff metric, the `K_collection` is a complete space. -/
-theorem K_collection_CompleteSpace [ProperSpace (ℝ × ℝ)] :
-    CompleteSpace (Subtype K_collection) := by
-  sorry
-
 
 open Filter
 
