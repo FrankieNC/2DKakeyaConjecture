@@ -119,7 +119,6 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
         sorry
       -- Apply inclusion of segments to conclude result
       exact fun ⦃a⦄ a_1 ↦ hx (h₃ a_1)
-
   -- Converse: ∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s
   · intro h_segment v hv
     specialize h_segment v
@@ -289,8 +288,6 @@ lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
 --   rw [K_collection]
 --   exact mem_sep h_nonempty h_compact
 
-
-
 lemma P_collection_sub_K_collection :
     P_collection ⊆ K_collection := by
   intro P hP
@@ -354,6 +351,15 @@ lemma P_collection.hausdorff_limit_property_i
     refine IsCompact.prod ?_ ?_
     · exact isCompact_Icc
     · exact isCompact_Icc
+  sorry
+
+theorem P_collection'_IsClosed : IsClosed P_collection' := by
+  sorry
+
+theorem P_collection'_IsComplete : CompleteSpace P_collection' := by
+  haveI : CompleteSpace (NonemptyCompacts (ℝ × ℝ)) :=
+    inferInstance
+  have : IsClosed P_collection' := P_collection'_IsClosed
   sorry
 
 end
