@@ -8,7 +8,7 @@ import Mathlib
 
 namespace Besicovitch
 
-open Set Real Topology Metric Bornology TopologicalSpace
+open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory
 
 -- Formalise the entirety of Section 2. Section 4 is nonsense
 
@@ -125,6 +125,11 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
     apply h_segment
     exact le_of_eq hv
 
+/--
+A Besicovitch set in `ℝⁿ` is a Kakeya set of Lebesgue measure zero.
+-/
+def IsBesicovitch {n : ℕ} (s : Set (Fin n → ℝ)) : Prop := IsKakeya s ∧ volume s = 0
+
 end
 
 section
@@ -221,19 +226,19 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
     use Q
     exact ⟨hP, rfl⟩
 
--- Define 𝒦 as the collection of non-empty compact subsets of ℝ²
-def K_collection : Set (Set (ℝ × ℝ)) :=
-  { K | K.Nonempty ∧ IsCompact K }
+-- -- Define 𝒦 as the collection of non-empty compact subsets of ℝ²
+-- def K_collection : Set (Set (ℝ × ℝ)) :=
+--   { K | K.Nonempty ∧ IsCompact K }
 
-lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
-    ∃ x ∈ Icc (-1 : ℝ) 1, segment01 x x ⊆ P := by
-  -- BM: I broke this because I changed P_collection to be more correct
-  obtain ⟨_, _, _, h⟩ := hP
-  specialize h 0 (by norm_num)
-  obtain ⟨x₁, x₂, hx₁, hx₂, h_diff, h_seg⟩ := h
-  have : x₁ = x₂ := by linarith [h_diff]
-  subst this
-  exact ⟨x₁, hx₁, h_seg⟩
+-- lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
+--     ∃ x ∈ Icc (-1 : ℝ) 1, segment01 x x ⊆ P := by
+--   -- BM: I broke this because I changed P_collection to be more correct
+--   obtain ⟨_, _, _, h⟩ := hP
+--   specialize h 0 (by norm_num)
+--   obtain ⟨x₁, x₂, hx₁, hx₂, h_diff, h_seg⟩ := h
+--   have : x₁ = x₂ := by linarith [h_diff]
+--   subst this
+--   exact ⟨x₁, hx₁, h_seg⟩
   -- exact Filter.frequently_principal.mp fun a ↦ a hx₁ h_seg
 
 -- lemma exists_mem_P {P : Set (ℝ × ℝ)}
@@ -288,79 +293,84 @@ lemma P_isNonempty {P : Set (ℝ × ℝ)} (hP : P ∈ P_collection) :
 --   rw [K_collection]
 --   exact mem_sep h_nonempty h_compact
 
-lemma P_collection_sub_K_collection :
-    P_collection ⊆ K_collection := by
-  intro P hP
-  -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
-  have h_nonempty : P.Nonempty := by
-    rcases P_isNonempty hP with ⟨x, hx, hseg⟩
-    refine ⟨(x, 0), hseg (left_mem_segment ℝ (x, 0) (x, 1))⟩
-  have h_compact : IsCompact P := by
-    rw [isCompact_iff_isClosed_bounded]
-    -- BM: I broke this because I changed P_collection to be more correct
-    obtain ⟨h₁, h₂, _⟩ := hP
-    -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
-    constructor
-    · exact h₁
-    · rw [isBounded_iff]
-      use 10
-      intro x hx y hy
-      have ⟨hfx1, hfx2⟩ := h₂ hx
-      have ⟨hfy1, hfy2⟩ := h₂ hy
-      have hx_bound : |x.1 - y.1| ≤ 2 := by
-        calc
-          |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
-          _ ≤ 1 + 1 := by
-            have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
-            have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
-            (expose_names; exact add_le_add this_1 this)
-          _ = 2 := by norm_num
-      have hy_bound : |x.2 - y.2| ≤ 2 := by
-        calc
-          |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
-          _ ≤ 1 + 1 := by
-            exact add_le_add
-              (abs_le.2 ⟨by linarith [hfx2.1], hfx2.2⟩)
-              (abs_le.2 ⟨by linarith [hfy2.1], hfy2.2⟩)
-          _ = 2 := by norm_num
-      calc
-        dist x y = ‖x - y‖ := rfl
-        _ ≤ |(x - y).1| + |(x - y).2| := by aesop
-        _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
-        _ ≤ 10 := by norm_num
-  exact mem_sep h_nonempty h_compact
+-- lemma P_collection_sub_K_collection :
+--     P_collection ⊆ K_collection := by
+--   intro P hP
+--   -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
+--   have h_nonempty : P.Nonempty := by
+--     rcases P_isNonempty hP with ⟨x, hx, hseg⟩
+--     refine ⟨(x, 0), hseg (left_mem_segment ℝ (x, 0) (x, 1))⟩
+--   have h_compact : IsCompact P := by
+--     rw [isCompact_iff_isClosed_bounded]
+--     -- BM: I broke this because I changed P_collection to be more correct
+--     obtain ⟨h₁, h₂, _⟩ := hP
+--     -- obtain ⟨h₁, ⟨h₂, ⟨h₃, ⟨h₄, ⟨h₅a, h₅b⟩⟩⟩⟩⟩ := hP
+--     constructor
+--     · exact h₁
+--     · rw [isBounded_iff]
+--       use 10
+--       intro x hx y hy
+--       have ⟨hfx1, hfx2⟩ := h₂ hx
+--       have ⟨hfy1, hfy2⟩ := h₂ hy
+--       have hx_bound : |x.1 - y.1| ≤ 2 := by
+--         calc
+--           |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
+--           _ ≤ 1 + 1 := by
+--             have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+--             have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
+--             (expose_names; exact add_le_add this_1 this)
+--           _ = 2 := by norm_num
+--       have hy_bound : |x.2 - y.2| ≤ 2 := by
+--         calc
+--           |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
+--           _ ≤ 1 + 1 := by
+--             exact add_le_add
+--               (abs_le.2 ⟨by linarith [hfx2.1], hfx2.2⟩)
+--               (abs_le.2 ⟨by linarith [hfy2.1], hfy2.2⟩)
+--           _ = 2 := by norm_num
+--       calc
+--         dist x y = ‖x - y‖ := rfl
+--         _ ≤ |(x - y).1| + |(x - y).2| := by aesop
+--         _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
+--         _ ≤ 10 := by norm_num
+--   exact mem_sep h_nonempty h_compact
 
 open Filter
 
--- BM: Don't you want to assume K ∈ 𝒦 here?
-/--
-If `P n ∈ P_collection` for all `n` and `hausdorffDist (P n) K → 0`, then `K` satisfies
-property (i): for every `k ∈ K` there are `x₁,x₂ ∈ [-1,1]` with
-`segment01 x₁ x₂ ⊆ K` and `k ∈ segment01 x₁ x₂`.
--/
-lemma P_collection.hausdorff_limit_property_i
-  {P : ℕ → Set (ℝ × ℝ)} {K : Set (ℝ × ℝ)}
-  (hP : ∀ n, P n ∈ P_collection)
-  (hK : K ∈ K_collection)
-  (hKlim : Tendsto (fun n ↦ hausdorffDist (P n) K) atTop (𝓝 0)) :
-  ∀ k ∈ K, ∃ x₁ ∈ Icc (-1 : ℝ) 1, ∃ x₂ ∈ Icc (-1 : ℝ) 1,
-    segment01 x₁ x₂ ⊆ K ∧ k ∈ segment01 x₁ x₂ := by
-  intro k hk
-  -- By compactness of Icc(-1,1)×Icc(-1,1) extract a convergent subsequence
-  have h_compact_sq : IsCompact (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) :=  by
-    refine IsCompact.prod ?_ ?_
-    · exact isCompact_Icc
-    · exact isCompact_Icc
+theorem 𝓟_IsClosed : IsClosed P_collection' := by
+  rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
+  intro Kₙ K h_mem h_lim
+  let F := fun n ↦ (Kₙ n : Set (ℝ × ℝ))
+  have tendstoF : Tendsto F atTop (𝓝 (K : Set _)) := by
+    sorry
+  have h_closed : IsClosed (K : Set (ℝ × ℝ)) :=
+    sorry
+  have h_sub : (K : Set _) ⊆ rectangle := by
+    sorry
+  have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2:= by
+    sorry
+  have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
+      x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
+    sorry
+  dsimp [P_collection'] at *
+  exact ⟨h_closed, h_sub, h_union, h_forall⟩
+
+-- Lemma 2.4 goes here
+
+/-- The subfamily of our Kakeya‐type compact sets which happen to have Lebesgue measure zero. -/
+def zero_measure_compacts : Set (NonemptyCompacts (ℝ × ℝ)) :=
+  { P ∈ P_collection' | volume (P : Set (ℝ × ℝ)) = 0 }
+
+/-- Theorem 2.3.  The collection of those `P` of Lebesgue‐measure zero is of second
+    category (i.e. non‐meagre) in the Hausdorff‐metric space of all `P`. -/
+theorem zero_measure_compacts_second_category :
+    ¬ IsMeagre (zero_measure_compacts : Set (NonemptyCompacts (ℝ × ℝ))) := by
   sorry
 
-theorem P_collection'_IsClosed : IsClosed P_collection' := by
+-- I wrote the statement down but I am not conviced myself
+theorem exists_besicovitch_set : ∃ s : Set (Fin 2 → ℝ), IsBesicovitch s := by
   sorry
-
-theorem P_collection'_IsComplete : CompleteSpace P_collection' := by
-  haveI : CompleteSpace (NonemptyCompacts (ℝ × ℝ)) :=
-    inferInstance
-  have : IsClosed P_collection' := P_collection'_IsClosed
-  sorry
+  -- pick any zero‐measure Kakeya compact P₀
 
 end
 
