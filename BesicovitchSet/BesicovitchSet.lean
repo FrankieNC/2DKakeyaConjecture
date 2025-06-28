@@ -340,17 +340,37 @@ open Filter
 theorem 𝓟_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
   intro Kₙ K h_mem h_lim
-  let F := fun n ↦ (Kₙ n : Set (ℝ × ℝ))
-  have tendstoF : Tendsto F atTop (𝓝 (K : Set _)) := by
+  let F : ℕ → Set (ℝ × ℝ) := fun n ↦ (Kₙ n : Set (ℝ × ℝ))
+  have hcoe : Continuous fun (P : NonemptyCompacts (ℝ × ℝ)) ↦ (P : Set (ℝ × ℝ)) := by
     sorry
-  have h_closed : IsClosed (K : Set (ℝ × ℝ)) :=
-    sorry
-  have h_sub : (K : Set _) ⊆ rectangle := by
-    sorry
-  have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2:= by
-    sorry
+    -- continuity
+  have tendstoF : Tendsto F atTop (𝓝 (K : Set (ℝ × ℝ))) :=
+    (hcoe.tendsto K).comp h_lim
+  have h_closed : IsClosed (K : Set (ℝ × ℝ)) := by
+    exact (K.toCompacts.isCompact).isClosed
+  have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
+    let A : Set (ℝ × ℝ) :=
+    { p | p.1 ∈ Icc (-1 : ℝ) 1
+         ∧ p.2 ∈ Icc (-1 : ℝ) 1
+         ∧ segment01 p.1 p.2 ⊆ (K : _) }
+    use A
+    have hA : A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1 := by
+      simp only [Icc_prod_Icc, subset_def, and_assoc]
+      intro a ha
+      aesop
+    refine ⟨hA, ext fun x ↦ by
+      constructor
+      · intro hxK
+        sorry
+      · sorry
+        ⟩
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
       x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
+    sorry
+  have h_rect_closed : IsClosed rectangle :=
+    isClosed_Icc.prod isClosed_Icc
+  have h_sub : (K : Set _) ⊆ rectangle := by
+    have h_in : ∀ n, F n ∈ {t | t ⊆ rectangle} := fun n ↦ (h_mem n).2.1
     sorry
   dsimp [P_collection'] at *
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
