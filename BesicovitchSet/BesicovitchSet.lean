@@ -74,21 +74,13 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
   constructor
   -- First, prove: IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x+v ⊆ s
   · intro h_kakeya v hv
-    rw [IsKakeya] at h_kakeya
+    -- rw [IsKakeya] at h_kakeya
 
     -- Case: v = 0
     by_cases h₀ : v = 0
     · rw [h₀]
       simp only [add_zero, segment_same, Set.singleton_subset_iff]
-      -- We still need to find some z, w such that segment z z+w ⊆ s
-      obtain ⟨w, hw⟩ : ∃ v : E, ‖v‖ = 1 := by
-        apply exists_norm_eq -- E is nontrivial, so such a unit vector exists
-        positivity
-      specialize h_kakeya w hw
-      rcases h_kakeya with ⟨z, hz⟩
-      use z
-      apply hz
-      exact left_mem_segment ℝ z (z + w) -- any point on a segment lies in the segment
+      exact h_kakeya.nonempty
 
     -- Case: v ≠ 0
     · set u := ‖v‖⁻¹ • v with hu -- rescale v to a unit vector u
@@ -108,15 +100,14 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
       -- We want to show: segment x x+v ⊆ segment x x+u
       -- Since v is a scalar multiple of u, both segments lie along same ray
       have h₃ : segment ℝ x (x + v) ⊆ segment ℝ x (x + u) := by
-        intro y hy
-        refine mem_segment_iff_sameRay.mpr ?_
-        rw [SameRay]
-        right
-        right
-        -- Here we need to figure out the scalars greater than zero such that
-        -- the two vectors are multiple of each other
-        -- @b-mehta Could you finish this for us?
-        sorry
+        apply Convex.segment_subset
+        · exact convex_segment _ _
+        · exact left_mem_segment _ _ _
+        · rw [segment_eq_image']
+          refine ⟨‖v‖, ⟨by simp, hv⟩, ?_⟩
+          simp [hu]
+          rw [smul_smul, mul_inv_cancel₀, one_smul]
+          exact h₁
       -- Apply inclusion of segments to conclude result
       exact fun ⦃a⦄ a_1 ↦ hx (h₃ a_1)
   -- Converse: ∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s
