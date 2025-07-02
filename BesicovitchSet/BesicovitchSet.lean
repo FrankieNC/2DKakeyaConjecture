@@ -31,7 +31,6 @@ theorem IsKakeya.subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya
   intro v hv
   rcases h v hv with ⟨x, hx⟩
   exact ⟨x, hx.trans hs⟩
-  -- exact Exists.intro x fun ⦃a⦄ a_1 ↦ hs (hx a_1)
 
 /-- The closed unit ball is Kakeya. -/
 theorem IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
@@ -39,31 +38,20 @@ theorem IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
   use -v
   intro y hy
   calc
-    dist y 0 = ‖y - 0‖ := by aesop
+    dist y 0 = ‖y - 0‖ := by simp
     _ ≤ ‖(-v) - 0‖ := by
       apply norm_sub_le_of_mem_segment
       simp only [neg_add_cancel] at hy
       rw [segment_symm]
       exact hy
-    _ = ‖v‖ := by simp [norm_neg]
+    _ = ‖v‖ := by simp
     _ = 1 := hv
 
 /-- In a nontrivial normed space, any Kakeya set is nonempty. -/
 theorem IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
-  rcases exists_pair_ne E with ⟨a, b, hab⟩
-  set x := a - b with hx
-  have hx : x ≠ 0 := by
-    intro h₀; apply hab
-    simpa [hx] using sub_eq_zero.1 h₀
-  have hpos : 0 < ‖x‖ := norm_pos_iff.mpr hx
-  set v := ‖x‖⁻¹ • x with hv
-  have hv_norm : ‖v‖ = 1 := by
-    rw [hv]
-    simp only [norm_smul, norm_inv, norm_norm]
-    aesop -- @b-mehta I am doing this at ungodly hours and I am too lazy to not use `aesop`
+  obtain ⟨v, hv_norm⟩ := exists_norm_eq E zero_le_one
   rcases h v hv_norm with ⟨y, hy⟩
-  use y
-  exact hy (left_mem_segment ℝ y (y + v))
+  exact ⟨y, hy (left_mem_segment ..)⟩
 
 /--
 A reformulation of the Kakeya condition: it suffices to check the existence of
@@ -74,13 +62,10 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
   constructor
   -- First, prove: IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x+v ⊆ s
   · intro h_kakeya v hv
-    -- rw [IsKakeya] at h_kakeya
 
     -- Case: v = 0
     by_cases h₀ : v = 0
-    · rw [h₀]
-      simp only [add_zero, segment_same, Set.singleton_subset_iff]
-      exact h_kakeya.nonempty
+    · simpa [h₀] using h_kakeya.nonempty
 
     -- Case: v ≠ 0
     · set u := ‖v‖⁻¹ • v with hu -- rescale v to a unit vector u
@@ -89,32 +74,21 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
         rw [norm_eq_zero] at h₀
         exact h₀
       -- Now u has norm 1
-      have h₂ : ‖u‖ = 1 := by
-        rw [hu]
-        rw [norm_smul, norm_inv, norm_norm]
-        field_simp
+      have h₂ : ‖u‖ = 1 := by field_simp [hu, norm_smul]
       -- By IsKakeya, s contains segment in direction u
       obtain ⟨x, hx⟩ := h_kakeya u h₂
       use x
-
       -- We want to show: segment x x+v ⊆ segment x x+u
       -- Since v is a scalar multiple of u, both segments lie along same ray
       have h₃ : segment ℝ x (x + v) ⊆ segment ℝ x (x + u) := by
-        apply Convex.segment_subset
-        · exact convex_segment _ _
-        · exact left_mem_segment _ _ _
-        · rw [segment_eq_image']
-          refine ⟨‖v‖, ⟨by simp, hv⟩, ?_⟩
-          simp [hu]
-          rw [smul_smul, mul_inv_cancel₀, one_smul]
-          exact h₁
+        apply (convex_segment _ _).segment_subset (left_mem_segment _ _ _)
+        rw [segment_eq_image']
+        exact ⟨‖v‖, by simp [*]⟩
       -- Apply inclusion of segments to conclude result
-      exact fun ⦃a⦄ a_1 ↦ hx (h₃ a_1)
+      exact h₃.trans hx
   -- Converse: ∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s
   · intro h_segment v hv
-    specialize h_segment v
-    apply h_segment
-    exact le_of_eq hv
+    exact h_segment v hv.le
 
 /--
 A Besicovitch set in `ℝⁿ` is a Kakeya set of Lebesgue measure zero.
