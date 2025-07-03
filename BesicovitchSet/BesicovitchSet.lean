@@ -19,7 +19,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 -- @FrankieNC: you should add the stuff you proved about this from CW3 to this section
 /-- A subset of a normed real vector space `E` is Kakeya if it contains a segment of unit length in
 every direction. -/
-def IsKakeya (s : Set E) : Prop :=
+def IsKakeya {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (s : Set E) : Prop :=
     ∀ v : E, ‖v‖ = 1 → ∃ x : E, segment ℝ x (x + v) ⊆ s
 
 /-- The universal set is Kakeya. -/
@@ -328,15 +328,19 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 
 open Filter
 
+attribute [-instance] Scott.topologicalSpace
+
 theorem 𝓟_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
   intro Kₙ K h_mem h_lim
   let F : ℕ → Set (ℝ × ℝ) := fun n ↦ (Kₙ n : Set (ℝ × ℝ))
-  have hcoe : Continuous fun (P : NonemptyCompacts (ℝ × ℝ)) ↦ (P : Set (ℝ × ℝ)) := by
-    sorry
-    -- continuity
-  have tendstoF : Tendsto F atTop (𝓝 (K : Set (ℝ × ℝ))) :=
-    (hcoe.tendsto K).comp h_lim
+  -- have cont_coe : Continuous ((↑) : NonemptyCompacts (ℝ × ℝ) → Set (ℝ × ℝ)) := by
+  --   sorry --continuous_coeFun
+  -- have hcoe : Continuous fun (P : NonemptyCompacts (ℝ × ℝ)) ↦ (P : Set (ℝ × ℝ)) := by
+  --   sorry
+  --   -- continuity
+  -- have tendstoF : Tendsto F atTop (𝓝 (K : Set (ℝ × ℝ))) :=
+  --   (cont_coe.tendsto K).comp h_lim
   have h_closed : IsClosed (K : Set (ℝ × ℝ)) := by
     exact (K.toCompacts.isCompact).isClosed
   have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
@@ -353,11 +357,21 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
       constructor
       · intro hxK
         sorry
-      · sorry
+      · intro hx
+        sorry
         ⟩
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
       x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
-    sorry
+    intro v hv
+    use 0, 0
+    constructor
+    · simp
+    · constructor
+      · simp
+      · constructor
+        · simp only [sub_self]
+          sorry
+        · sorry
   have h_rect_closed : IsClosed rectangle :=
     isClosed_Icc.prod isClosed_Icc
   have h_sub : (K : Set _) ⊆ rectangle := by
@@ -382,6 +396,37 @@ theorem zero_measure_compacts_second_category :
 theorem exists_besicovitch_set : ∃ s : Set (Fin 2 → ℝ), IsBesicovitch s := by
   sorry
   -- pick any zero‐measure Kakeya compact P₀
+
+/-- A Besicovitch/Kakeya subset of ℝ has full Hausdorff dimension. -/
+theorem hausdorff_dim_Kakeya_eq_1 (K : Set ℝ)
+  (hK : IsKakeya K) :
+    dimH K = 1 := by
+  rw [IsKakeya] at hK
+  specialize hK 1
+  simp only [norm_one, le_add_iff_nonneg_right, zero_le_one, segment_eq_Icc, forall_const] at hK
+  rcases hK with ⟨x₀, hseg⟩
+  have hIcc_sub : Icc x₀ (x₀ + 1) ⊆ K := by
+    simpa [segment_eq_Icc (by linarith : x₀ ≤ x₀ + 1)] using hseg
+  have hlow : 1 ≤ dimH K := by
+    have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
+      have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
+        rw [interior_Icc]
+        aesop
+      calc
+        dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
+        _ = 1 := by simp
+    calc
+      1 = dimH (Icc x₀ (x₀ + 1)) := eq1.symm
+      _ ≤ dimH K := by
+        apply dimH_mono; exact hseg
+  have hup : dimH K ≤ 1 := by
+    calc
+      dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ K)
+      _ = Module.finrank ℝ ℝ := by simp only [Module.finrank_self, Nat.cast_one, dimH_univ]
+      _ = 1 := by simp
+  apply le_antisymm
+  · exact hup
+  · exact hlow
 
 end
 
