@@ -398,7 +398,7 @@ theorem exists_besicovitch_set : ∃ s : Set (Fin 2 → ℝ), IsBesicovitch s :=
   -- pick any zero‐measure Kakeya compact P₀
 
 /-- A Besicovitch/Kakeya subset of ℝ has full Hausdorff dimension. -/
-theorem hausdorff_dim_Kakeya_eq_1 (K : Set ℝ)
+theorem dimH_kakeya_eq_one (K : Set ℝ)
   (hK : IsKakeya K) :
     dimH K = 1 := by
   rw [IsKakeya] at hK
@@ -411,7 +411,7 @@ theorem hausdorff_dim_Kakeya_eq_1 (K : Set ℝ)
     have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
       have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
         rw [interior_Icc]
-        aesop
+        simp
       calc
         dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
         _ = 1 := by simp
