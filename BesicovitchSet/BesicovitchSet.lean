@@ -16,7 +16,6 @@ section
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
--- @FrankieNC: you should add the stuff you proved about this from CW3 to this section
 /-- A subset of a normed real vector space `E` is Kakeya if it contains a segment of unit length in
 every direction. -/
 def IsKakeya {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (s : Set E) : Prop :=
@@ -61,12 +60,9 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
   constructor
   -- First, prove: IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x+v ⊆ s
   · intro h_kakeya v hv
-    -- rw [IsKakeya] at h_kakeya
-
     -- Case: v = 0
     by_cases h₀ : v = 0
     · simpa [h₀] using h_kakeya.nonempty
-
     -- Case: v ≠ 0
     · set u := ‖v‖⁻¹ • v with hu -- rescale v to a unit vector u
       have h₁ : ‖v‖ ≠ 0 := by
@@ -78,7 +74,6 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
       -- By IsKakeya, s contains segment in direction u
       obtain ⟨x, hx⟩ := h_kakeya u h₂
       use x
-
       -- We want to show: segment x x+v ⊆ segment x x+u
       -- Since v is a scalar multiple of u, both segments lie along same ray
       have h₃ : segment ℝ x (x + v) ⊆ segment ℝ x (x + u) := by
@@ -98,6 +93,7 @@ def IsBesicovitch {n : ℕ} (s : Set (Fin n → ℝ)) : Prop := IsKakeya s ∧ v
 theorem dimH_segment_eq_one (x y : E) (h : x ≠ y) :
     dimH (segment ℝ x y) = 1 := by
   sorry
+
 end
 
 section
@@ -329,7 +325,7 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 
 open Filter
 
-attribute [-instance] Scott.topologicalSpace
+-- attribute [-instance] Scott.topologicalSpace
 
 theorem 𝓟_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
@@ -489,22 +485,27 @@ theorem asdf {X : Type*} [EMetricSpace X] [MeasurableSpace X] [BorelSpace X] {s 
 For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
-  set s := dimH A with hs
-  have hs_nonneg : 0 ≤ s := by positivity
+  -- set s := dimH A with hs
+  have hs_nonneg : 0 ≤ dimH A := by positivity
   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0∞) < 1 by norm_num)
   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
     tendsto_nhdsWithin_mono_right
       (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
   choose G' hG'_Gδ subG' meas_eq' using
     fun k : ℕ ↦
-      have : (0 : ℝ) ≤ (s + φ k).toReal := by positivity
+      have : (0 : ℝ) ≤ (dimH A + φ k).toReal := by positivity
       asdf this A
   let G := ⋂ k, G' k
   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
-  have hge : s ≤ dimH G := by
+  have hge : dimH A ≤ dimH G := by
     exact dimH_mono Asub
-  have hle : dimH G ≤ s := by
+  have hle : dimH G ≤ dimH A := by
+    have : ∀ (k : ℕ), μH[(dimH A + φ k).toReal] A = 0 := by
+      intro k
+      apply hausdorffMeasure_of_dimH_lt
+      have hpos : 0 < φ k := (h₂φ k).1
+      sorry
     sorry
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
