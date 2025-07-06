@@ -49,7 +49,7 @@ theorem IsKakeya.ball : IsKakeya (closedBall (0 : E) 1) := by
 theorem IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
   obtain ⟨v, hv_norm⟩ := exists_norm_eq E zero_le_one
   rcases h v hv_norm with ⟨y, hy⟩
-  exact ⟨y, hy (left_mem_segment ℝ y (y + v))⟩
+  exact ⟨y, hy (left_mem_segment ..)⟩
 
 /--
 A reformulation of the Kakeya condition: it suffices to check the existence of
@@ -60,9 +60,11 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
   constructor
   -- First, prove: IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x+v ⊆ s
   · intro h_kakeya v hv
+
     -- Case: v = 0
     by_cases h₀ : v = 0
     · simpa [h₀] using h_kakeya.nonempty
+
     -- Case: v ≠ 0
     · set u := ‖v‖⁻¹ • v with hu -- rescale v to a unit vector u
       have h₁ : ‖v‖ ≠ 0 := by
@@ -80,6 +82,7 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
         apply (convex_segment _ _).segment_subset (left_mem_segment _ _ _)
         rw [segment_eq_image']
         exact ⟨‖v‖, by simp [*]⟩
+      -- Apply inclusion of segments to conclude result
       exact h₃.trans hx
   -- Converse: ∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s
   · intro h_segment v hv
