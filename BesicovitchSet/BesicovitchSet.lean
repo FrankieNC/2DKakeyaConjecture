@@ -336,7 +336,6 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   have h_closed : IsClosed (K : Set (ℝ × ℝ)) := (K.toCompacts.isCompact).isClosed
   obtain ⟨k, hk_in_K⟩ := K.nonempty
   choose pₙ hp_in_Pn using fun n ↦ (Pₙ n).nonempty
-
   -- choose Aₙ hAₙ_sub hPₙ using fun n ↦ (h_mem n).2.2
   -- have hp_lim : Tendsto (fun n ↦ pₙ n) atTop (𝓝 k) := by
     -- sorry
@@ -411,7 +410,7 @@ theorem one_dim_exists_kakeya : ∃ s : Set ℝ, IsKakeya s := ⟨closedBall (0 
 lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
     ∃ x₀, Icc x₀ (x₀ + 1) ⊆ K := by
   have := hK 1 (by simp)
-  simp only [segment_eq_Icc, norm_one] at this
+  -- simp only [segment_eq_Icc, norm_one] at this
   rcases this with ⟨x₀, hseg⟩
   exact ⟨x₀, by simpa using hseg⟩
 
@@ -477,12 +476,33 @@ theorem one_dim_kakeya_conjecture : ∃ s : Set ℝ, IsKakeya s ∧ dimH s = 1 :
 --   · exact hup
 --   · exact hlow
 
-open ENNReal
+open ENNReal NNReal MeasureTheory Measure
 
 /-@b-mehta's formulation of Prop 3.2 of Fox (needs to be PR by BM)-/
 theorem asdf {X : Type*} [EMetricSpace X] [MeasurableSpace X] [BorelSpace X] {s : ℝ} (hs : 0 ≤ s) (E : Set X) :
     ∃ G : Set X, IsGδ G ∧ E ⊆ G ∧ μH[s] G = μH[s] E := by
   sorry
+
+theorem dimH_eq_iInf {X : Type*}
+  [EMetricSpace X] [MeasurableSpace X] [BorelSpace X]
+  (s : Set X) :
+    dimH s = ⨅ (d : ℝ≥0) (_ : μH[d] s = 0), (d : ℝ≥0∞) := by
+  borelize X
+  rw [dimH_def]
+  apply le_antisymm
+  · simp only [le_iInf_iff, iSup_le_iff, ENNReal.coe_le_coe]
+    intro i hi j hj
+    by_contra! hij
+    simpa [hi, hj] using hausdorffMeasure_mono (le_of_lt hij) s
+  · by_contra! h
+    rcases ENNReal.lt_iff_exists_nnreal_btwn.1 h with ⟨d', hdim_lt, hlt⟩
+    have h0 : μH[d'] s = 0 := by
+      apply hausdorffMeasure_of_dimH_lt
+      rw [dimH_def]
+      exact hdim_lt
+    have hle : (⨅ (d'' : ℝ≥0) (_ : μH[d''] s = 0), (d'' : ℝ≥0∞)) ≤ (d' : ℝ≥0∞) := by
+      exact iInf₂_le d' h0
+    exact lt_irrefl _ (hlt.trans_le hle)
 
 /-- Proposition 3.4 (Fox):
 For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
@@ -501,17 +521,89 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   let G := ⋂ k, G' k
   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
-  have hge : dimH A ≤ dimH G := by
-    exact dimH_mono Asub
+  have hge : dimH A ≤ dimH G := dimH_mono Asub
   have hle : dimH G ≤ dimH A := by
-    have : ∀ (k : ℕ), μH[(dimH A + φ k).toReal] A = 0 := by
-      intro k
-      apply hausdorffMeasure_of_dimH_lt
-      have hpos : 0 < φ k := (h₂φ k).1
+    rw [← forall_gt_iff_le]
+    intro t ht
+    have hpos : 0 < (t - dimH A) := by simpa
+    rw [ENNReal.tendsto_atTop_zero] at h₃φ
+    rcases (h₃φ _ hpos) with ⟨k, hφk⟩
+    set d := (dimH A + φ k) with hd
+    have h₅φ: 0 < φ k := by sorry
+    have hlt : dimH A < d.toNNReal := sorry --by simpa [hd] using lt_add_iff_pos_right.2 h₅φ
+    have hμA₀ : μH[d.toReal] A = 0 := hausdorffMeasure_of_dimH_lt hlt
+    have hμA : μH[d.toReal] (G' k) = 0 := -- (meas_eq' k).trans hμA₀
       sorry
+      -- simpa [hd] using lt_add_iff_pos_right.2 h₅φ
+    have aux : μH[t.toReal] G = 0 := by
+      have : μH[t.toReal] G ≤ 0 := by
+        calc
+          μH[t.toReal] G ≤ μH[t.toReal] (G' k) := by sorry
+          _ ≤ μH[d.toReal] (G' k) := by sorry
+          _ = 0 := by sorry
+      exact le_bot_iff.1 this
+    have : μH[t.toReal] G ≤ μH[d.toReal] (G' k) := by sorry
     sorry
+    -- rw [dimH_eq_iInf]
+    -- sorry
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
+theorem exists_Gδ_of_dimH' {n : ℕ} (A : Set (Fin n → ℝ)) :
+    ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
+  -- set s := dimH A with hs
+  have hs_nonneg : 0 ≤ dimH A := by positivity
+  obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0∞) < 1 by norm_num)
+  have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
+    tendsto_nhdsWithin_mono_right
+      (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
+  choose G' hG'_Gδ subG' meas_eq' using
+    fun k : ℕ ↦
+      have : (0 : ℝ) ≤ (dimH A + φ k).toReal := by positivity
+      asdf this A
+  let G := ⋂ k, G' k
+  have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
+  have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
+  have hge : dimH A ≤ dimH G := dimH_mono Asub
+  have hle : dimH G ≤ dimH A := dimH_le fun d' hd' ↦ by
+    by_contra! hgt
+    have hpos : 0 < (d' : ℝ≥0∞) - dimH A := by aesop
+    rw [ENNReal.tendsto_atTop_zero] at h₃φ
+    rcases h₃φ _ hpos with ⟨k, hφk_lt⟩
+    set D := (dimH A + φ k) with hD
+    have h₅φ : 0 < φ k := by
+      specialize h₂φ k
+      simp only [mem_Ioo] at h₂φ
+      cases' h₂φ with hφkpos _
+      exact hφkpos
+    -- specialize hφk_lt n
+    have hlt : (dimH A) < D.toNNReal := by
+      -- add_lt_add_left hpos (dimH A)
+      -- simpa [hD] using lt_add_iff_pos_right.2 h₅φ
+      sorry
+    have hμA : μH[D.toNNReal] A = 0 := by
+      apply hausdorffMeasure_of_dimH_lt
+      sorry
+      -- hausdorffMeasure_of_dimH_lt hlt
+      -- simpa [hD] using hausdorffMeasure_of_dimH_lt (by simpa using hlt)
+      -- hausdorffMeasure_of_dimH_lt hlt
+    have hμGk : μH[D.toReal] (G' k) = 0 := (meas_eq' k).trans hμA
+    have hmono : μH[d'.toReal] G ≤ μH[D.toReal] (G' k) := by
+      calc
+        μH[d'.toReal] G ≤ μH[d'.toReal] (G' k) := by
+          apply measure_mono
+          exact iInter_subset_of_subset k fun ⦃a⦄ a ↦ a
+        _ ≤ μH[D.toReal] (G' k) := by
+          apply hausdorffMeasure_mono
+          apply le_of_lt
+          -- simpa [hD] using add_lt_add_left hpos (dimH A)
+          sorry
+    have h0 : μH[d'.toReal] G = 0 := by
+      have hbot : μH[d'.toReal] G ≤ 0 := by
+        apply hmono.trans_eq
+        exact hμGk
+      exact le_bot_iff.1 hbot
+    simp [h0] at hd'
+  exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
 end
 
