@@ -504,12 +504,64 @@ theorem dimH_eq_iInf {X : Type*}
       exact iInf₂_le d' h0
     exact lt_irrefl _ (hlt.trans_le hle)
 
+/-- A subset of `ℝⁿ` has finite Hausdorff dimension. -/
+lemma dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} :
+    dimH A ≠ ⊤ := by
+  have : dimH A < ⊤  := by
+    calc
+      dimH A ≤ dimH (Set.univ : Set (Fin n → ℝ)) := dimH_mono (by simp)
+      _ = n := dimH_univ_pi_fin n
+      _ < ⊤ := by simp
+  simpa using (lt_top_iff_ne_top).1 this
+
 /-- Proposition 3.4 (Fox):
 For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
+-- theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
+--     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
+--   -- set s := dimH A with hs
+--   -- have hs_nonneg : 0 ≤ dimH A := by positivity
+--   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0∞) < 1 by norm_num)
+--   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
+--     tendsto_nhdsWithin_mono_right
+--       (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
+--   choose G' hG'_Gδ subG' meas_eq' using
+--     fun k : ℕ ↦
+--       have : (0 : ℝ) ≤ (dimH A + φ k).toReal := by positivity
+--       asdf this A
+--   let G := ⋂ k, G' k
+--   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
+--   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
+--   have hge : dimH A ≤ dimH G := dimH_mono Asub
+--   have hle : dimH G ≤ dimH A := by
+--     rw [← forall_gt_iff_le]
+--     intro t ht
+--     have hpos : 0 < (t - dimH A) := by simpa
+--     rw [ENNReal.tendsto_atTop_zero] at h₃φ
+--     rcases (h₃φ _ hpos) with ⟨k, hφk⟩
+--     set d := (dimH A + φ k) with hd
+--     have h₅φ: 0 < φ k := by sorry
+--     have hlt : dimH A < d.toNNReal := sorry --by simpa [hd] using lt_add_iff_pos_right.2 h₅φ
+--     have hμA₀ : μH[d.toReal] A = 0 := hausdorffMeasure_of_dimH_lt hlt
+--     have hμA : μH[d.toReal] (G' k) = 0 := -- (meas_eq' k).trans hμA₀
+--       sorry
+--       -- simpa [hd] using lt_add_iff_pos_right.2 h₅φ
+--     have aux : μH[t.toReal] G = 0 := by
+--       have : μH[t.toReal] G ≤ 0 := by
+--         calc
+--           μH[t.toReal] G ≤ μH[t.toReal] (G' k) := by sorry
+--           _ ≤ μH[d.toReal] (G' k) := by sorry
+--           _ = 0 := by sorry
+--       exact le_bot_iff.1 this
+--     have : μH[t.toReal] G ≤ μH[d.toReal] (G' k) := by sorry
+--     sorry
+--     -- rw [dimH_eq_iInf]
+--     -- sorry
+--   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
+
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
   -- set s := dimH A with hs
-  have hs_nonneg : 0 ≤ dimH A := by positivity
+  -- have hs_nonneg : 0 ≤ dimH A := by positivity
   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0∞) < 1 by norm_num)
   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
     tendsto_nhdsWithin_mono_right
@@ -521,69 +573,25 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   let G := ⋂ k, G' k
   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
-  have hge : dimH A ≤ dimH G := dimH_mono Asub
-  have hle : dimH G ≤ dimH A := by
-    rw [← forall_gt_iff_le]
-    intro t ht
-    have hpos : 0 < (t - dimH A) := by simpa
-    rw [ENNReal.tendsto_atTop_zero] at h₃φ
-    rcases (h₃φ _ hpos) with ⟨k, hφk⟩
-    set d := (dimH A + φ k) with hd
-    have h₅φ: 0 < φ k := by sorry
-    have hlt : dimH A < d.toNNReal := sorry --by simpa [hd] using lt_add_iff_pos_right.2 h₅φ
-    have hμA₀ : μH[d.toReal] A = 0 := hausdorffMeasure_of_dimH_lt hlt
-    have hμA : μH[d.toReal] (G' k) = 0 := -- (meas_eq' k).trans hμA₀
-      sorry
-      -- simpa [hd] using lt_add_iff_pos_right.2 h₅φ
-    have aux : μH[t.toReal] G = 0 := by
-      have : μH[t.toReal] G ≤ 0 := by
-        calc
-          μH[t.toReal] G ≤ μH[t.toReal] (G' k) := by sorry
-          _ ≤ μH[d.toReal] (G' k) := by sorry
-          _ = 0 := by sorry
-      exact le_bot_iff.1 this
-    have : μH[t.toReal] G ≤ μH[d.toReal] (G' k) := by sorry
-    sorry
-    -- rw [dimH_eq_iInf]
-    -- sorry
-  exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
-
-theorem exists_Gδ_of_dimH' {n : ℕ} (A : Set (Fin n → ℝ)) :
-    ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
-  -- set s := dimH A with hs
-  have hs_nonneg : 0 ≤ dimH A := by positivity
-  obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0∞) < 1 by norm_num)
-  have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
-    tendsto_nhdsWithin_mono_right
-      (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
-  choose G' hG'_Gδ subG' meas_eq' using
-    fun k : ℕ ↦
-      have : (0 : ℝ) ≤ (dimH A + φ k).toReal := by positivity
-      asdf this A
-  let G := ⋂ k, G' k
-  have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
-  have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
+  observe dimHA_fin : dimH A ≠ ⊤
+  have dimH_lt_top : dimH A < ⊤ := lt_top_iff_ne_top.2 (dimH_ne_top : _)
   have hge : dimH A ≤ dimH G := dimH_mono Asub
   have hle : dimH G ≤ dimH A := dimH_le fun d' hd' ↦ by
     by_contra! hgt
-    have hpos : 0 < (d' : ℝ≥0∞) - dimH A := by aesop
+    have hd_pos : 0 < (d' : ℝ≥0∞) - dimH A := by aesop
     rw [ENNReal.tendsto_atTop_zero] at h₃φ
-    rcases h₃φ _ hpos with ⟨k, hφk_lt⟩
+    rcases h₃φ _ hd_pos with ⟨k, hφk_lt⟩
     set D := (dimH A + φ k) with hD
-    have h₅φ : 0 < φ k := by
-      specialize h₂φ k
-      simp only [mem_Ioo] at h₂φ
-      cases' h₂φ with hφkpos _
-      exact hφkpos
-    -- specialize hφk_lt n
+    specialize h₂φ k
+    simp only [mem_Ioo] at h₂φ
+    cases' h₂φ with hφk_gt_0 hφk_lt_1
+    have hφk_ne_top : φ k ≠ ⊤ := LT.lt.ne_top hφk_lt_1
     have hlt : (dimH A) < D.toNNReal := by
       -- add_lt_add_left hpos (dimH A)
       -- simpa [hD] using lt_add_iff_pos_right.2 h₅φ
+      rw [hD]
       sorry
-    have hμA : μH[D.toNNReal] A = 0 := by
-      apply hausdorffMeasure_of_dimH_lt
-      sorry
-      -- hausdorffMeasure_of_dimH_lt hlt
+    have hμA : μH[D.toNNReal] A = 0 := hausdorffMeasure_of_dimH_lt hlt
       -- simpa [hD] using hausdorffMeasure_of_dimH_lt (by simpa using hlt)
       -- hausdorffMeasure_of_dimH_lt hlt
     have hμGk : μH[D.toReal] (G' k) = 0 := (meas_eq' k).trans hμA
@@ -595,7 +603,9 @@ theorem exists_Gδ_of_dimH' {n : ℕ} (A : Set (Fin n → ℝ)) :
         _ ≤ μH[D.toReal] (G' k) := by
           apply hausdorffMeasure_mono
           apply le_of_lt
-          -- simpa [hD] using add_lt_add_left hpos (dimH A)
+          rw [hD]
+          specialize hφk_lt k
+          simp only [ge_iff_le, le_refl, forall_const] at hφk_lt
           sorry
     have h0 : μH[d'.toReal] G = 0 := by
       have hbot : μH[d'.toReal] G ≤ 0 := by
