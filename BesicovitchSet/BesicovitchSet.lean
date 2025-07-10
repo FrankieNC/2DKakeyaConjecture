@@ -337,13 +337,37 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   obtain ⟨k, hk_in_K⟩ := K.nonempty
   rw [Metric.tendsto_atTop] at h_lim
   simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
-  -- choose pₙ hpₙ_mem hpₙ_lt using fun n ↦ Metric.exists_dist_lt_of_hausdorffDist_lt
-    -- exact (Metric.exists_dist_lt_of_hausdorffDist_lt) (hk_in_K)
-    -- Metric.exists_dist_lt_of_hausdorffDist_lt
-      -- hk_in_K
-  -- Metric.NonemptyCompacts.dist_eq at h_lim
-  -- choose pₙ hpₙ₁ hpₙ₂ using fun n ↦
-    -- Metric.exists_dist_lt_of_hausdorffDist_lt hk_in_K
+  have hPn_bdd (n : ℕ) : IsBounded (Pₙ n : Set (ℝ × ℝ)) := P_is_bounded (h_mem n)
+  have hK_bdd : IsBounded (K : Set (ℝ × ℝ)) := (K.toCompacts.isCompact).isBounded
+  have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (ℝ × ℝ)) ≠ ⊤ := by
+    apply Metric.hausdorffEdist_ne_top_of_nonempty_of_bounded
+    exact NonemptyCompacts.nonempty (Pₙ n)
+    · exact NonemptyCompacts.nonempty K
+    · exact hPn_bdd n
+    · exact hK_bdd
+  have h_haus (n : ℕ) : hausdorffDist (K : Set (ℝ × ℝ)) (Pₙ n : Set (ℝ × ℝ)) < (1 : ℝ)/(n+1) := by
+    rcases h_lim (1/(n+1)) (by positivity) with ⟨N, hN⟩
+    sorry
+    -- have : hausdorffDist (Pₙ n) K < 1/(n+1) := by
+      -- sorry
+    -- hN n (le_refl _)
+    -- simpa [Metric.hausdorffDist_comm] using this
+  choose pₙ hpₙ_mem hpₙ_lt using fun n ↦
+    Metric.exists_dist_lt_of_hausdorffDist_lt
+      (x := k) (s := K) (t := Pₙ n) (r := (1 : ℝ) / (n + 1))
+      hk_in_K
+      (h_haus n)
+      (by simpa [EMetric.hausdorffEdist_comm] using fin_dist n)
+      -- (by
+      -- rcases h_lim (1 / ((n : ℕ) + 1)) (by positivity) with ⟨N, hN⟩
+      -- have : ∀ (n : ℕ), hausdorffDist K (Pₙ n) < 1 / (n + 1)) := hN n (le_refl)
+      -- simpa [Metric.hausdorffDist_comm] using sorry)
+      -- (by
+        -- have hfin : EMetric.hausdorffEdist (Pₙ n) (K : Set _) ≠ ⊤ := fin_dist n
+        -- simpa [EMetric.hausdorffEdist_comm] using hfin)
+  -- choose pₙ hpₙ_mem hpₙ_lt using fun n ↦
+  --   Metric.exists_dist_lt_of_hausdorffDist_lt hk_in_K
+
   have h_sub : (K : Set _) ⊆ rectangle := by
     have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
       intro n x hx
