@@ -368,19 +368,20 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   -- choose pₙ hpₙ_mem hpₙ_lt using fun n ↦
   --   Metric.exists_dist_lt_of_hausdorffDist_lt hk_in_K
 
+  -- Hmm, this may not be correct, investigate further
   have h_sub : (K : Set _) ⊆ rectangle := by
     have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
-      intro n x hx
-      sorry
-    -- So the plan is to realise that P n lies in the rectangle for all n and as P_n tends to K we have
-    -- that K is in the rectangle too
-    -- We maybe need to show that the rectangle is closed
+      intro n
+      specialize h_mem n
+      obtain ⟨_, ⟨h⟩⟩ := h_mem
+      exact h
     sorry
   have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
     sorry
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
       x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
     intro v hv
+
     sorry
   rw [P_collection']
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
@@ -524,7 +525,7 @@ theorem dimH_eq_iInf {X : Type*}
       exact iInf₂_le d' h0
     exact lt_irrefl _ (hlt.trans_le hle)
 
-
+/-- A subset of `ℝⁿ` has finite Hausdorff dimension. -/
 theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
     dimH A < ⊤ := by
   calc
@@ -532,9 +533,8 @@ theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
     _ = n := dimH_univ_pi_fin n
     _ < ⊤ := by simp
 
-
-/-- A subset of `ℝⁿ` has finite Hausdorff dimension. -/
-lemma dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by simpa using (lt_top_iff_ne_top).1 dimH_lt_top
+theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
+  simpa using (lt_top_iff_ne_top).1 dimH_lt_top
 
 /-- Proposition 3.4 (Fox):
 For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
@@ -584,6 +584,8 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
   -- set s := dimH A with hs
   -- have hs_nonneg : 0 ≤ dimH A := by positivity
+  observe dimHA_ne_top : dimH A ≠ ⊤
+  observe dimHA_nt_top : dimH A < ⊤
   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0∞) < 1 by norm_num)
   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
     tendsto_nhdsWithin_mono_right
@@ -595,8 +597,6 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   let G := ⋂ k, G' k
   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
-  observe dimHA_ne_top : dimH A ≠ ⊤
-  observe dimHA_nt_top : dimH A < ⊤
   have hge : dimH A ≤ dimH G := dimH_mono Asub
   have hle : dimH G ≤ dimH A := dimH_le fun d' hd' ↦ by
     by_contra! hgt
