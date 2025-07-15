@@ -133,14 +133,14 @@ theorem Nonempty_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
   exact ⟨![x₁, 0], hPseg <| by rw [segment01]; apply left_mem_segment⟩
 
 theorem IsBounded_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
-    IsBounded (P : Set (Fin 2 → ℝ)) := by
+    IsBounded P := by
   rcases hP with ⟨-, h_subset, -⟩
-  have h_rect_bdd : IsBounded (rectangle : Set (Fin 2 → ℝ)) := by
+  have h_rect_bdd : IsBounded rectangle := by
     simp [rectangle, isBounded_Icc]
   exact h_rect_bdd.subset h_subset
 
 theorem IsCompact_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
-    IsCompact (P : Set (Fin 2 → ℝ)) := by
+    IsCompact P := by
   simpa [isCompact_iff_isClosed_bounded] using ⟨hP.1, IsBounded_P hP⟩
 
 /-- The carrier image of `P_collection'` recovers the original set-level collection `P_collection`. -/
