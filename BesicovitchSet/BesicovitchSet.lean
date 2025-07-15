@@ -104,7 +104,7 @@ def rectangle : Set (ℝ × ℝ) := Icc (-1) 1 ×ˢ Icc 0 1
 def segment01 (x₁ x₂ : ℝ) : Set (ℝ × ℝ) :=
   segment ℝ (x₁, 0) (x₂, 1)
 
--- Collection 𝒫 of subsets P ⊆ [-1,1] × [0,1] satisfying (i) and (ii)
+/-- Collection 𝒫 of subsets P ⊆ [-1,1] × [0,1] satisfying (i) and (ii) -/
 def P_collection : Set (Set (ℝ × ℝ)) :=
   { P | IsClosed P ∧ P ⊆ rectangle ∧
     -- (i) P is a union of line segments from (x₁, 0) to (x₂, 1)
@@ -114,7 +114,7 @@ def P_collection : Set (Set (ℝ × ℝ)) :=
     (∀ v : ℝ, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1
         ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
 
--- Define 𝒦 as the collection of non-empty compact subsets of ℝ²
+/-- Define 𝒦 as the collection of non-empty compact subsets of ℝ² -/
 def P_collection' : Set (NonemptyCompacts (ℝ × ℝ)) :=
   { P | IsClosed (P : Set (ℝ × ℝ)) ∧ (P : Set (ℝ × ℝ)) ⊆ rectangle ∧
     -- (i) P is a union of line segments from (x₁, 0) to (x₂, 1)
@@ -136,12 +136,22 @@ theorem P_is_bounded {P : NonemptyCompacts (ℝ × ℝ)} (hP : P ∈ P_collectio
     calc
       |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
       _ ≤ 1 + 1 := by
-        have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx₁)
-        have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
-        (expose_names; exact add_le_add this_1 this)
+        refine add_le_add (abs_le.2 (mem_Icc.1 hfx₁)) (abs_le.2 (mem_Icc.1 hfy1))
       _ ≤ 2 := by norm_num
   have hy_bound : |x.2 - y.2| ≤ 2 := by
-    sorry
+    calc
+      |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub _ _
+      _ ≤ 1 + 1 := by
+        have hx2 : |x.2| ≤ 1 := by
+          have hx2_nonneg : (0 : ℝ) ≤ x.2 := (mem_Icc.1 hfx₂).1
+          have hx2_le1 : x.2 ≤ 1 := (mem_Icc.1 hfx₂).2
+          simpa [abs_of_nonneg hx2_nonneg] using hx2_le1
+        have hy2 : |y.2| ≤ 1 := by
+          have hy2_nonneg : (0 : ℝ) ≤ y.2 := (mem_Icc.1 hfy2).1
+          have hy2_le1 : y.2 ≤ 1 := (mem_Icc.1 hfy2).2
+          simpa [abs_of_nonneg hy2_nonneg] using hy2_le1
+        exact add_le_add hx2 hy2
+      _ ≤ 2 := by norm_num
   calc
     dist x y = ‖x - y‖ := rfl
     _ ≤ |(x - y).1| + |(x - y).2| := by aesop
@@ -377,45 +387,103 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   --   sorry
 
   -- This is the x_1 x_2 sub n sequences stuff
-  have Icc_comp : IsCompact (Icc (-1:ℝ) 1) := isCompact_Icc
+  have h_comp : IsCompact (Icc (-1 : ℝ) 1 ×ˢ Icc (-1) 1) := (isCompact_Icc.prod isCompact_Icc)
   -- I think I have to put the sequence have statements in the respective proofs
 
+  -- This is for the proof of prop 1
   have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
-    -- This is for the proof of prop 1
     have h_seg_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ pₙ n ∈ segment01 x₁ x₂ ∧ segment01 x₁ x₂ ⊆ (Pₙ n : Set _) := by
       intro n
       rcases h_mem n with ⟨_, h_sub_rect, ⟨A, hA_sub, hA_eq⟩, _⟩
       have hpₙ : (pₙ n)  ∈ (Pₙ n : Set _) := hpₙ_mem n
       have hp_union : (pₙ n) ∈ ⋃ p ∈ A, segment01 p.1 p.2 := by
         simpa [hA_eq] using hpₙ
-      rcases mem_iUnion.1 hp_union with ⟨p, hpA, hp_seg, hp_n⟩
-      -- have hx₁ : p.1 ∈ Icc (-1 : ℝ) 1 := (Set.mem_prod.1 ()).1
-      -- have hx₂ : p.2 ∈ Icc (-1 : ℝ) 1 := (Set.mem_prod.1 (hA_sub hpA)).2
-      sorry
+      rcases mem_iUnion.1 hp_union with ⟨p, hp_union'⟩
+      rcases mem_iUnion.1 hp_union' with ⟨hpA, hp_seg⟩
+      rcases Set.mem_prod.1 (hA_sub hpA) with ⟨hx₁, hx₂⟩
+      have h_seg_subset : segment01 p.1 p.2 ⊆ (Pₙ n : Set _) := by
+        intro x hx
+        have : x ∈ ⋃ q ∈ A, segment01 q.1 q.2 := by
+          exact mem_biUnion hpA hx
+        simpa [hA_eq] using this
+      exact ⟨p.1, p.2, hx₁, hx₂, hp_seg, h_seg_subset⟩
 
     choose x₁ x₂ hx₁ hx₂ h_pn_in_seg_n h_seg_subset_n using h_seg_exists
 
-    have h_in_rect : ∀ n, (x₁ n, x₂ n) ∈ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := fun n ↦ mem_prod.2 ⟨hx₁ n, hx₂ n⟩
+    set A : Set (ℝ × ℝ) := closure (Set.range fun n : ℕ ↦ (x₁ n, x₂ n)) with hA
 
-    -- This needs to be rephrased or maybe prove that the limits are in [-1,1] x [-1,1]
-    have h_sub_ex : ∃ (φ : ℕ → ℕ) (hφ : StrictMono φ) (x1_lim x2_lim : Icc (-1 : ℝ) 1), Tendsto (fun j ↦ x₁ (φ j)) atTop (𝓝 x1_lim) ∧ Tendsto (fun j ↦ x₂ (φ j)) atTop (𝓝 x2_lim) := by
+    have hA_sub : A ⊆ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := by
+      have h_range : (Set.range fun n : ℕ ↦ (x₁ n, x₂ n)) ⊆ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := by
+        intro p hp
+        rcases hp with ⟨n, rfl⟩
+        exact mk_mem_prod (hx₁ n) (hx₂ n)
+      have h_closed : IsClosed (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := by exact isClosed_Icc.prod isClosed_Icc
+      simpa [hA] using closure_minimal h_range h_closed
+
+    have h_cover : (K : Set (ℝ × ℝ)) ⊆ ⋃ p ∈ A, segment01 p.1 p.2 := by
+      intro k' hk'
+      have : ∀ j : ℕ, ∃ n ≥ j, dist (Pₙ n) K < (1 : ℝ) / (j + 1) := by
+        intro j
+        have h_pos : (0 : ℝ) < 1 / (j + 1) := by
+          have : (0 : ℝ) < (j + 1 : ℝ) := Nat.cast_add_one_pos j
+          exact one_div_pos.2 this
+        obtain ⟨N, hN⟩ := h_lim _ h_pos
+        exact ⟨max N j, le_max_right _ _, hN _ (le_max_left _ _)⟩
+
+      choose n₀ hn₀_ge hn₀_small using this
+
+      set φ : ℕ → ℕ := n₀ with hφ
+
+      have hφ_mono : StrictMono φ := by
+        intro i j hij
+        -- exact lt_of_lt_of_le hij (hn₀_ge j)
+        sorry
+
+      have h_pj : ∀ j : ℕ, ∃ p, p ∈ Pₙ (φ j) ∧ dist p k' ≤ dist K (Pₙ (φ j)) := by
+        intro j
+        -- have fin : fin_dist (φ j)
+        sorry
+
+      choose q hq_mem hq_dist using h_pj
+
+      have hx_sub : ∀ j, (x₁ (φ j), x₂ (φ j)) ∈ Set.range (fun n : ℕ ↦ (x₁ n, x₂ n)) := by
+        intro j
+        exact ⟨φ j, rfl⟩
+
       sorry
 
-    choose φ hφ_strict x1_lim x2_lim h_tend₁ h_tend₂ using h_sub_ex
-    set L := segment01 x1_lim x2_lim with hL
-    have h_p_in_L : ∀ n, pₙ n ∈ L := by
-      intro n
-      rw [hL]
-      -- Need to show that the segements converge to this limiting segment and the result will follow
-      sorry
-    have h_L_in_K : L ⊆ ↑K := by
-      sorry
-    have k_in_L : k ∈ L := by
-      sorry
-    sorry
-    -- I need to define the set A:
-    -- I take it to be the the set {(x_1 (n_j), (x_2 (n_j))}
-    -- let A : Set (ℝ × ℝ) := (fun k : ℝ×ℝ => (x1_lim n, x2_lim n)) '' (↑K)
+    have h_seg_subset_K : (⋃ p ∈ A, segment01 p.1 p.2) ⊆ (K : Set _) := by
+      intro y hy
+      rcases mem_iUnion.1 hy with ⟨p, hp⟩
+      rcases mem_iUnion.1 hp with ⟨hpA, hy_seg⟩
+      have hc : segment01 p.1 p.2 ⊆ (K : Set _) := by sorry
+      exact hc hy_seg
+
+    have h_eq : (K : Set _) = ⋃ p ∈ A, segment01 p.1 p.2 := (Set.Subset.antisymm h_cover h_seg_subset_K)
+
+    exact ⟨A, hA_sub, h_eq⟩
+
+    -- have h_in_rect : ∀ n, (x₁ n, x₂ n) ∈ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := fun n ↦ mem_prod.2 ⟨hx₁ n, hx₂ n⟩
+
+    -- -- This needs to be rephrased or maybe prove that the limits are in [-1,1] x [-1,1]
+    -- have h_sub_ex : ∃ (φ : ℕ → ℕ) (hφ : StrictMono φ) (x1_lim x2_lim : Icc (-1 : ℝ) 1), Tendsto (fun j ↦ x₁ (φ j)) atTop (𝓝 x1_lim) ∧ Tendsto (fun j ↦ x₂ (φ j)) atTop (𝓝 x2_lim) := by
+    --   sorry
+
+    -- choose φ hφ_strict x1_lim x2_lim h_tend₁ h_tend₂ using h_sub_ex
+    -- set L := segment01 x1_lim x2_lim with hL
+    -- have h_p_in_L : ∀ n, pₙ n ∈ L := by
+    --   intro n
+    --   rw [hL]
+    --   -- Need to show that the segements converge to this limiting segment and the result will follow
+    --   sorry
+    -- have h_L_in_K : L ⊆ ↑K := by
+    --   sorry
+    -- have k_in_L : k ∈ L := by
+    --   sorry
+    -- sorry
+    -- -- I need to define the set A:
+    -- -- I take it to be the the set {(x_1 (n_j), (x_2 (n_j))}
+    -- -- let A : Set (ℝ × ℝ) := (fun k : ℝ×ℝ => (x1_lim n, x2_lim n)) '' (↑K)
 
 
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
@@ -682,3 +750,6 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
 end
 
 end Besicovitch
+
+
+#lint
