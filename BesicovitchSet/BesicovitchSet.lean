@@ -93,10 +93,6 @@ A Besicovitch set in `ℝⁿ` is a Kakeya set of Lebesgue measure zero.
 -/
 def IsBesicovitch {n : ℕ} (s : Set (Fin n → ℝ)) : Prop := IsKakeya s ∧ volume s = 0
 
-theorem dimH_segment_eq_one (x y : E) (h : x ≠ y) :
-    dimH (segment ℝ x y) = 1 := by
-  sorry
-
 end
 
 section
@@ -134,13 +130,13 @@ theorem P_is_bounded {P : NonemptyCompacts (ℝ × ℝ)} (hP : P ∈ P_collectio
   rw [isBounded_iff]
   use 10
   intro x hx y hy
-  have ⟨hfx1, hfx2⟩ := h₂ hx
+  have ⟨hfx₁, hfx₂⟩ := h₂ hx
   have ⟨hfy1, hfy2⟩ := h₂ hy
   have hx_bound : |x.1 - y.1| ≤ 2 := by
     calc
       |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
       _ ≤ 1 + 1 := by
-        have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+        have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx₁)
         have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
         (expose_names; exact add_le_add this_1 this)
       _ ≤ 2 := by norm_num
@@ -167,13 +163,13 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
       · rw [isBounded_iff]
         use 10
         intro x hx y hy
-        have ⟨hfx1, hfx2⟩ := h₂ hx
+        have ⟨hfx₁, hfx₂⟩ := h₂ hx
         have ⟨hfy1, hfy2⟩ := h₂ hy
         have hx_bound : |x.1 - y.1| ≤ 2 := by
           calc
             |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
             _ ≤ 1 + 1 := by
-              have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+              have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx₁)
               have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
               (expose_names; exact add_le_add this_1 this)
             _ = 2 := by norm_num
@@ -258,13 +254,13 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 --     · rw [isBounded_iff]
 --       use 10
 --       intro x hx y hy
---       have ⟨hfx1, hfx2⟩ := h₂ hx
+--       have ⟨hfx₁, hfx₂⟩ := h₂ hx
 --       have ⟨hfy1, hfy2⟩ := h₂ hy
 --       have hx_bound : |x.1 - y.1| ≤ 2 := by
 --         calc
 --           |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
 --           _ ≤ 1 + 1 := by
---             have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+--             have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx₁)
 --             have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
 --             (expose_names; exact add_le_add this_1 this)
 --           _ = 2 := by norm_num
@@ -273,7 +269,7 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 --           |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
 --           _ ≤ 1 + 1 := by
 --             exact add_le_add
---               (abs_le.2 ⟨by linarith [hfx2.1], hfx2.2⟩)
+--               (abs_le.2 ⟨by linarith [hfx₂.1], hfx₂.2⟩)
 --               (abs_le.2 ⟨by linarith [hfy2.1], hfy2.2⟩)
 --           _ = 2 := by norm_num
 --       calc
@@ -301,13 +297,13 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 --     · rw [isBounded_iff]
 --       use 10
 --       intro x hx y hy
---       have ⟨hfx1, hfx2⟩ := h₂ hx
+--       have ⟨hfx₁, hfx₂⟩ := h₂ hx
 --       have ⟨hfy1, hfy2⟩ := h₂ hy
 --       have hx_bound : |x.1 - y.1| ≤ 2 := by
 --         calc
 --           |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
 --           _ ≤ 1 + 1 := by
---             have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx1)
+--             have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx₁)
 --             have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
 --             (expose_names; exact add_le_add this_1 this)
 --           _ = 2 := by norm_num
@@ -316,7 +312,7 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 --           |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
 --           _ ≤ 1 + 1 := by
 --             exact add_le_add
---               (abs_le.2 ⟨by linarith [hfx2.1], hfx2.2⟩)
+--               (abs_le.2 ⟨by linarith [hfx₂.1], hfx₂.2⟩)
 --               (abs_le.2 ⟨by linarith [hfy2.1], hfy2.2⟩)
 --           _ = 2 := by norm_num
 --       calc
@@ -334,9 +330,8 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
   intro Pₙ K h_mem h_lim
   have h_closed : IsClosed (K : Set (ℝ × ℝ)) := (K.toCompacts.isCompact).isClosed
-  obtain ⟨k, hk_in_K⟩ := K.nonempty
   rw [Metric.tendsto_atTop] at h_lim
-  simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
+  -- simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
   have hPn_bdd (n : ℕ) : IsBounded (Pₙ n : Set (ℝ × ℝ)) := P_is_bounded (h_mem n)
   have hK_bdd : IsBounded (K : Set (ℝ × ℝ)) := (K.toCompacts.isCompact).isBounded
   have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (ℝ × ℝ)) ≠ ⊤ := by
@@ -345,160 +340,216 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
     · exact NonemptyCompacts.nonempty K
     · exact hPn_bdd n
     · exact hK_bdd
-  have : ∀ n, ∃ p ∈ Pₙ n, dist p k ≤ dist K (Pₙ n) := by
-    sorry
+
+  obtain ⟨k, hk_in_K⟩ := K.nonempty
+
+  have : ∀ n, ∃ p ∈ Pₙ n, dist p (k) ≤ dist K (Pₙ n) := by
+    intro n
+    simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
+    obtain ⟨p, hp_mem, hp_eq⟩ := (Pₙ n).isCompact.exists_infDist_eq_dist (Pₙ n).nonempty k
+    have hpk : dist p k = Metric.infDist k (Pₙ n : Set _) := by
+      simpa [eq_comm, dist_comm] using hp_eq
+    have fin : EMetric.hausdorffEdist (K : Set (ℝ × ℝ)) (Pₙ n : Set _) ≠ ⊤ := by
+      simpa [EMetric.hausdorffEdist_comm] using fin_dist n
+    have h_le : Metric.infDist k (Pₙ n : Set _) ≤ Metric.hausdorffDist (K : Set (ℝ × ℝ)) (Pₙ n : Set _) := by
+      apply Metric.infDist_le_hausdorffDist_of_mem (x := k) (s := (K : Set _)) (t := (Pₙ n : Set _)) hk_in_K fin
+    have h_dist : dist p k ≤ dist K (Pₙ n) := by
+      simpa [Metric.NonemptyCompacts.dist_eq, hpk] using h_le
+    exact ⟨p, hp_mem, h_dist⟩
+
   choose pₙ hpₙ_mem hpₙ_lt using this
 
-  -- have h_haus (n : ℕ) : hausdorffDist (K : Set (ℝ × ℝ)) (Pₙ n : Set (ℝ × ℝ)) < (1 : ℝ)/(n+1) := by
-  --   rcases h_lim (1/(n+1)) (by positivity) with ⟨N, hN⟩
-  --   sorry
-  --   -- have : hausdorffDist (Pₙ n) K < 1/(n+1) := by
-  --     -- sorry
-  --   -- hN n (le_refl _)
-  --   -- simpa [Metric.hausdorffDist_comm] using this
-  -- choose pₙ hpₙ_mem hpₙ_lt using fun n ↦
-  --   Metric.exists_dist_lt_of_hausdorffDist_lt
-  --     (x := k) (s := K) (t := Pₙ n) (r := (1 : ℝ) / (n + 1))
-  --     hk_in_K
-  --     (h_haus n)
-  --     (by simpa [EMetric.hausdorffEdist_comm] using fin_dist n)
-      -- (by
-      -- rcases h_lim (1 / ((n : ℕ) + 1)) (by positivity) with ⟨N, hN⟩
-      -- have : ∀ (n : ℕ), hausdorffDist K (Pₙ n) < 1 / (n + 1)) := hN n (le_refl)
-      -- simpa [Metric.hausdorffDist_comm] using sorry)
-      -- (by
-        -- have hfin : EMetric.hausdorffEdist (Pₙ n) (K : Set _) ≠ ⊤ := fin_dist n
-        -- simpa [EMetric.hausdorffEdist_comm] using hfin)
-  -- choose pₙ hpₙ_mem hpₙ_lt using fun n ↦
-  --   Metric.exists_dist_lt_of_hausdorffDist_lt hk_in_K
+  have h_tendsto : Tendsto pₙ atTop (𝓝 k) := by
+    rw [NormedAddCommGroup.tendsto_atTop']
+    intro ε hε
+    obtain ⟨N, hN⟩ := h_lim ε hε
+    refine ⟨N, ?_⟩
+    intro n hn
+    have h_le : dist (pₙ n) k ≤ dist K (Pₙ n) := hpₙ_lt n
+    have h_small : dist K (Pₙ n) < ε := by
+      have := hN n (Nat.le_of_lt hn)
+      simpa [dist_comm] using this
+    have : dist (pₙ n) k < ε := lt_of_le_of_lt h_le h_small
+    simpa [dist_eq] using this
 
-  -- Hmm, this may not be correct, investigate further
+  have h_p_rect : ∀ n, pₙ n ∈ rectangle := by
+    intro n
+    sorry
+
+  -- This is the x_1 x_2 sub n sequences stuff
+  have Icc_comp : IsCompact (Icc (-1:ℝ) 1) := isCompact_Icc
+  -- I think I have to put the sequence have statements in the respective proofs
+
+  have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
+      x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
+    intro v hv
+    have aux₂ : ∀ v : ℝ, ∀ n, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
+      sorry
+    choose! x₁ x₂ hx₁ hx₂ hdiff hseg using aux₂
+
+    sorry
+
+  have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
+    -- This is for the proof of prop 1
+    have h_seg_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ pₙ n ∈ segment01 x₁ x₂ ∧ segment01 x₁ x₂ ⊆ (Pₙ n : Set _) := by
+      sorry
+    choose x₁ x₂ hx₁ hx₂ h_pn_in_seg_n h_seg_subset_n using h_seg_exists
+
+    have h_in_rect : ∀ n, (x₁ n, x₂ n) ∈ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := fun n ↦ mem_prod.2 ⟨hx₁ n, hx₂ n⟩
+
+    -- This needs to be rephrased or maybe prove that the limits are in [-1,1] x [-1,1]
+    have h_sub_ex : ∃ (φ : ℕ → ℕ) (hφ : StrictMono φ) (x1_lim x2_lim : Icc (-1 : ℝ) 1), Tendsto (fun j ↦ x₁ (φ j)) atTop (𝓝 x1_lim) ∧ Tendsto (fun j ↦ x₂ (φ j)) atTop (𝓝 x2_lim) := by
+      sorry
+
+    choose φ hφ_strict x1_lim x2_lim h_tend₁ h_tend₂ using h_sub_ex
+    set L := segment01 x1_lim x2_lim with hL
+    have h_p_in_L : ∀ n, pₙ n ∈ L := by
+      intro n
+      rw [hL]
+      -- Need to show that the segements converge to this limiting segment and the result will follow
+      sorry
+    have h_L_in_K : L ⊆ ↑K := by
+      sorry
+    have k_in_L : k ∈ L := by
+      sorry
+    sorry
+    -- I need to define the set A:
+    -- I take it to be the the set {(x_1 (n_j), (x_2 (n_j))}
+    -- let A : Set (ℝ × ℝ) := (fun k : ℝ×ℝ => (x1_lim n, x2_lim n)) '' (↑K)
+
+  -- To prove this, we need to use property 1 maybe or 2. The proof relies on the fact that the lines are contained in teh rectangle
   have h_sub : (K : Set _) ⊆ rectangle := by
+    intro k' hk'
     have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
       intro n
       specialize h_mem n
       obtain ⟨_, ⟨h⟩⟩ := h_mem
       exact h
-    sorry
-  have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
-    sorry
-  have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
-      x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
-    intro v hv
-    sorry
+    have rect_closed : IsClosed rectangle := by
+      rw [rectangle]
+      simp only [Icc_prod_Icc]
+      exact isClosed_Icc
+    apply rect_closed.isSeqClosed h_p_rect
+    have : Tendsto (fun n ↦ pₙ n) atTop (𝓝 k') := by
+      rw [Metric.tendsto_atTop]
+      intro ε hε
+      specialize h_lim ε hε
+      rcases h_lim with ⟨N, hN⟩
+      use N
+      intro n hn
+      calc
+        dist (pₙ n) k' ≤ dist (Pₙ n) K := by
+          specialize hpₙ_lt n
+          sorry
+        _ < ε := by
+          simp only [Metric.NonemptyCompacts.dist_eq]
+          specialize hN n
+          apply hN
+          exact hn
+    exact this
+
+    -- rw [← closure_eq_iff_isClosed] at rect_closed
+    -- apply IsClosed.isSeqClosed at rect_closed
+    -- rw [IsSeqClosed] at rect_closed
+    -- exact rect_closed.isSeqClosed h_p_rect h_tendsto
   rw [P_collection']
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
-  --   let A : Set (ℝ × ℝ) :=
-  --   { p | p.1 ∈ Icc (-1 : ℝ) 1
-  --        ∧ p.2 ∈ Icc (-1 : ℝ) 1
-  --        ∧ segment01 p.1 p.2 ⊆ (K : _) }
-  --   use A
-  --   have hA : A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1 := by
-  --     simp only [Icc_prod_Icc, subset_def, and_assoc]
-  --     intro a ha
-  --     aesop
-  --   refine ⟨hA, ext fun x ↦ by
-  --     constructor
-  --     · intro hxK
-  --       sorry
-  --     · intro hx
-  --       sorry
-  --       ⟩
-  -- have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
-  --     x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
-  --   intro v hv
-  --   use 0, 0
-  --   constructor
-  --   · simp
-  --   · constructor
-  --     · simp
-  --     · constructor
-  --       · simp only [sub_self]
-  --         sorry
-  --       · sorry
-  -- have h_rect_closed : IsClosed rectangle :=
-  --   isClosed_Icc.prod isClosed_Icc
-  -- have h_sub : (K : Set _) ⊆ rectangle := by
-  --   have h_in : ∀ n, F n ∈ {t | t ⊆ rectangle} := fun n ↦ (h_mem n).2.1
-  --   sorry
-  -- dsimp [P_collection'] at *
-  -- exact ⟨h_closed, h_sub, h_union, h_forall⟩
-
 -- Lemma 2.4 goes here
 
-/-- In ℝ, there exists a Kakeya set. -/
-theorem one_dim_exists_kakeya : ∃ s : Set ℝ, IsKakeya s := ⟨closedBall (0 : ℝ) 1, IsKakeya.ball⟩
+-- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
+lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe 𝓟_IsClosed
 
-/-- Any Kakeya set in `ℝ` contains a closed unit‐length interval. -/
-lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
-    ∃ x₀, Icc x₀ (x₀ + 1) ⊆ K := by
-  have := hK 1 (by simp)
-  -- simp only [segment_eq_Icc, norm_one] at this
-  rcases this with ⟨x₀, hseg⟩
-  exact ⟨x₀, by simpa using hseg⟩
+/-- The family of those `P : P_collection'` which have Lebesgue measure zero. -/
+def zero_measure_sets : Set P_collection' := { P | volume (P : Set (ℝ × ℝ)) = 0 }
 
-/-- Any closed interval of length 1 has Hausdorff dimension 1. -/
-lemma dimH_Icc_length_one (a : ℝ) :
-    dimH (Icc a (a + 1)) = 1 := by
-  have h : (interior (Icc a (a + 1))).Nonempty := by simp [interior_Icc]
-  calc
-    dimH (Icc a (a + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior h
-    _ = 1 := by simp
+/-- Theorem 2.3.  The set of `P ∈ P_collection'` of Lebesgue measure zero is of second
+    category (i.e. non-meager) in the complete metric space `P_collection'`. -/
+theorem zero_measure_sets_second_category :
+    ¬ IsMeagre (zero_measure_sets : Set P_collection') := by
+  sorry
 
-/-- If a set contains some unit‐interval, then its dimH ≥ 1. -/
-lemma dimH_of_contains_Icc {K : Set ℝ} {x₀} (h : Icc x₀ (x₀ + 1) ⊆ K) :
-    1 ≤ dimH K := by
-  calc
-    1 = dimH (Icc x₀ (x₀ + 1)) := (dimH_Icc_length_one x₀).symm
-    _ ≤ dimH K := dimH_mono h
+theorem exists_zero_measure_set : Nonempty (zero_measure_sets : Set P_collection') := by
+  rw [zero_measure_sets]
+  sorry
 
-/-- Any subset of `ℝ` has dimH ≤ 1. -/
-lemma dimH_le_one_univ : ∀ (K : Set ℝ), dimH K ≤ 1 := fun K ↦ by
-  calc
-    dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ _)
-    _ = Module.finrank ℝ ℝ := by simp [dimH_univ]
-    _ = 1 := by simp
+theorem exists_besicovitch_set :
+    ∃ B : Set (Fin 2 → ℝ), IsBesicovitch B := by
+  obtain ⟨P0, hP0μ⟩ := exists_zero_measure_set
+  set B := (P0 : Set (ℝ × ℝ)) with hB
+  sorry
 
-/-- Any Kakeya set in `ℝ` has full Hausdorff dimension. -/
-theorem dimH_kakeya_eq_one (K : Set ℝ) (hK : IsKakeya K) :
-    dimH K = 1 := by
-  rcases kakeya_contains_unit_Icc hK with ⟨x₀, hsub⟩
-  exact le_antisymm (dimH_le_one_univ K) (dimH_of_contains_Icc hsub)
 
-/-- Kakeya conjecture in ℝ: there exists a Kakeya set of Hausdorff dimension 1. -/
-theorem one_dim_kakeya_conjecture : ∃ s : Set ℝ, IsKakeya s ∧ dimH s = 1 := by
-  refine ⟨closedBall (0 : ℝ) 1, ⟨IsKakeya.ball, dimH_kakeya_eq_one _ IsKakeya.ball⟩⟩
+-- /-- In ℝ, there exists a Kakeya set. -/
+-- theorem one_dim_exists_kakeya : ∃ s : Set ℝ, IsKakeya s := ⟨closedBall (0 : ℝ) 1, IsKakeya.ball⟩
+
+-- /-- Any Kakeya set in `ℝ` contains a closed unit‐length interval. -/
+-- lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
+--     ∃ x₀, Icc x₀ (x₀ + 1) ⊆ K := by
+--   have := hK 1 (by simp)
+--   -- simp only [segment_eq_Icc, norm_one] at this
+--   rcases this with ⟨x₀, hseg⟩
+--   exact ⟨x₀, by simpa using hseg⟩
+
+-- /-- Any closed interval of length 1 has Hausdorff dimension 1. -/
+-- lemma dimH_Icc_length_one (a : ℝ) :
+--     dimH (Icc a (a + 1)) = 1 := by
+--   have h : (interior (Icc a (a + 1))).Nonempty := by simp [interior_Icc]
+--   calc
+--     dimH (Icc a (a + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior h
+--     _ = 1 := by simp
+
+-- /-- If a set contains some unit‐interval, then its dimH ≥ 1. -/
+-- lemma dimH_of_contains_Icc {K : Set ℝ} {x₀} (h : Icc x₀ (x₀ + 1) ⊆ K) :
+--     1 ≤ dimH K := by
+--   calc
+--     1 = dimH (Icc x₀ (x₀ + 1)) := (dimH_Icc_length_one x₀).symm
+--     _ ≤ dimH K := dimH_mono h
+
+-- /-- Any subset of `ℝ` has dimH ≤ 1. -/
+-- lemma dimH_le_one_univ : ∀ (K : Set ℝ), dimH K ≤ 1 := fun K ↦ by
+--   calc
+--     dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ _)
+--     _ = Module.finrank ℝ ℝ := by simp [dimH_univ]
+--     _ = 1 := by simp
+
+-- /-- Any Kakeya set in `ℝ` has full Hausdorff dimension. -/
+-- theorem dimH_kakeya_eq_one (K : Set ℝ) (hK : IsKakeya K) :
+--     dimH K = 1 := by
+--   rcases kakeya_contains_unit_Icc hK with ⟨x₀, hsub⟩
+--   exact le_antisymm (dimH_le_one_univ K) (dimH_of_contains_Icc hsub)
+
+-- /-- Kakeya conjecture in ℝ: there exists a Kakeya set of Hausdorff dimension 1. -/
+-- theorem one_dim_kakeya_conjecture : ∃ s : Set ℝ, IsKakeya s ∧ dimH s = 1 := by
+--   refine ⟨closedBall (0 : ℝ) 1, ⟨IsKakeya.ball, dimH_kakeya_eq_one _ IsKakeya.ball⟩⟩
 
 
 -- /-- A Kakeya subset of ℝ has full Hausdorff dimension. -/
--- theorem dimH_kakeya_eq_one (K : Set ℝ)
---   (hK : IsKakeya K) :
---     dimH K = 1 := by
---   rw [IsKakeya] at hK
---   specialize hK 1
---   simp only [norm_one, le_add_iff_nonneg_right, zero_le_one, segment_eq_Icc, forall_const] at hK
---   rcases hK with ⟨x₀, hseg⟩
---   have hIcc_sub : Icc x₀ (x₀ + 1) ⊆ K := by
---     simpa [segment_eq_Icc (by linarith : x₀ ≤ x₀ + 1)] using hseg
---   have hlow : 1 ≤ dimH K := by
---     have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
---       have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
---         rw [interior_Icc]; simp
---       calc
---         dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
---         _ = 1 := by simp
---     calc
---       1 = dimH (Icc x₀ (x₀ + 1)) := eq1.symm
---       _ ≤ dimH K := by apply dimH_mono; exact hseg
---   have hup : dimH K ≤ 1 := by
---     calc
---       dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ K)
---       _ = Module.finrank ℝ ℝ := by simp only [Module.finrank_self, Nat.cast_one, dimH_univ]
---       _ = 1 := by simp
---   apply le_antisymm
---   · exact hup
---   · exact hlow
+theorem dimH_kakeya_eq_one (K : Set ℝ)
+  (hK : IsKakeya K) :
+    dimH K = 1 := by
+  rw [IsKakeya] at hK
+  specialize hK 1
+  simp only [norm_one, le_add_iff_nonneg_right, zero_le_one, segment_eq_Icc, forall_const] at hK
+  rcases hK with ⟨x₀, hseg⟩
+  have hIcc_sub : Icc x₀ (x₀ + 1) ⊆ K := by
+    simpa [segment_eq_Icc (by linarith : x₀ ≤ x₀ + 1)] using hseg
+  have hlow : 1 ≤ dimH K := by
+    have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
+      have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
+        rw [interior_Icc]; simp
+      calc
+        dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
+        _ = 1 := by simp
+    calc
+      1 = dimH (Icc x₀ (x₀ + 1)) := eq1.symm
+      _ ≤ dimH K := by apply dimH_mono; exact hseg
+  have hup : dimH K ≤ 1 := by
+    calc
+      dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ K)
+      _ = Module.finrank ℝ ℝ := by simp only [Module.finrank_self, Nat.cast_one, dimH_univ]
+      _ = 1 := by simp
+  exact le_antisymm hup hlow
 
 open ENNReal NNReal MeasureTheory Measure Filter Topology EMetric
 
@@ -543,8 +594,6 @@ theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
 For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
-  -- set s := dimH A with hs
-  -- have hs_nonneg : 0 ≤ dimH A := by positivity
   observe dimHA_ne_top : dimH A ≠ ⊤
   observe dimHA_nt_top : dimH A < ⊤
   generalize hA : dimH A = DA
@@ -564,7 +613,6 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     by_contra! hgt
     have hd_pos : 0 < (d' : ℝ≥0) - DA := by aesop
     rw [Metric.tendsto_atTop] at h₃φ
-    -- rw [ENNReal.tendsto_atTop_zero] at h₃φ
     rcases h₃φ _ hd_pos with ⟨k, hφk_lt⟩
     generalize hD : DA + φ k = D
     specialize h₂φ k
@@ -602,44 +650,6 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     simp [h0] at hd'
   rw [← hA]
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
-    -- generalize hD : DA + φ k = D
-    -- -- set D := dimH A + φ k with hD
-    -- specialize h₂φ k
-    -- simp only [mem_Ioo] at h₂φ
-    -- cases' h₂φ with hφk_gt_0 hφk_lt_1
-    -- -- lift D to ℝ≥0 using this
-    -- have hlt : DA < D := by sorry
-    --   -- add_lt_add_left hpos (dimH A)
-    --   -- simpa [hD] using lt_add_iff_pos_right.2 h₅φ
-    --   -- have : D ≠ ⊤ := by
-    --   --   refine ENNReal.Finiteness.add_ne_top dimHA_ne_top hφk_ne_top
-    --   -- rw [ENNReal.coe_toNNReal this]
-    --   -- refine ENNReal.lt_add_right dimHA_ne_top <| Ne.symm (ne_of_lt hφk_gt_0)
-    -- have hμA : μH[D] A = 0 := by
-    --   apply hausdorffMeasure_of_dimH_lt
-    --   sorry
-    --   -- simpa [hD] using hausdorffMeasure_of_dimH_lt (by simpa using hlt)
-    --   -- hausdorffMeasure_of_dimH_lt hlt
-    -- have hμGk : μH[D.toReal] (G' k) = 0 := (meas_eq' k).trans hμA
-    -- have hmono : μH[d'.toReal] G ≤ μH[D.toReal] (G' k) := by
-    --   calc
-    --     μH[d'.toReal] G ≤ μH[d'.toReal] (G' k) := by
-    --       apply measure_mono
-    --       exact iInter_subset_of_subset k fun ⦃a⦄ a ↦ a
-    --     _ ≤ μH[D.toReal] (G' k) := by
-    --       apply hausdorffMeasure_mono
-    --       apply le_of_lt
-    --       rw [hD]
-    --       specialize hφk_lt k
-    --       simp only [ge_iff_le, le_refl, forall_const] at hφk_lt
-    --       sorry
-    -- have h0 : μH[d'.toReal] G = 0 := by
-    --   have hbot : μH[d'.toReal] G ≤ 0 := by
-    --     apply hmono.trans_eq
-    --     exact hμGk
-    --   exact le_bot_iff.1 hbot
-    -- simp [h0] at hd'
-  -- exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
 end
 
