@@ -130,7 +130,7 @@ theorem Nonempty_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     P.Nonempty := by
   rcases hP with ⟨-, -, -, h⟩
   rcases h 0 (by norm_num) with ⟨x₁, x₂, -, -, -, hPseg⟩
-  exact ⟨![x₁, 0], hPseg <| by rw [segment01]; apply left_mem_segment⟩
+  exact ⟨![x₁, 0], hPseg <| by apply left_mem_segment⟩
 
 theorem IsBounded_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     IsBounded P := by
