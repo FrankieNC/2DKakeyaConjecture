@@ -372,27 +372,27 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
     have : dist (pₙ n) k < ε := lt_of_le_of_lt h_le h_small
     simpa [dist_eq] using this
 
-  have h_p_rect : ∀ n, pₙ n ∈ rectangle := by
-    intro n
-    sorry
+  -- have h_p_rect : ∀ n, pₙ n ∈ rectangle := by
+  --   intro n
+  --   sorry
 
   -- This is the x_1 x_2 sub n sequences stuff
   have Icc_comp : IsCompact (Icc (-1:ℝ) 1) := isCompact_Icc
   -- I think I have to put the sequence have statements in the respective proofs
 
-  have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
-      x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
-    intro v hv
-    have aux₂ : ∀ v : ℝ, ∀ n, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
-      sorry
-    choose! x₁ x₂ hx₁ hx₂ hdiff hseg using aux₂
-
-    sorry
-
   have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
     -- This is for the proof of prop 1
     have h_seg_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ pₙ n ∈ segment01 x₁ x₂ ∧ segment01 x₁ x₂ ⊆ (Pₙ n : Set _) := by
+      intro n
+      rcases h_mem n with ⟨_, h_sub_rect, ⟨A, hA_sub, hA_eq⟩, _⟩
+      have hpₙ : (pₙ n)  ∈ (Pₙ n : Set _) := hpₙ_mem n
+      have hp_union : (pₙ n) ∈ ⋃ p ∈ A, segment01 p.1 p.2 := by
+        simpa [hA_eq] using hpₙ
+      rcases mem_iUnion.1 hp_union with ⟨p, hpA, hp_seg, hp_n⟩
+      -- have hx₁ : p.1 ∈ Icc (-1 : ℝ) 1 := (Set.mem_prod.1 ()).1
+      -- have hx₂ : p.2 ∈ Icc (-1 : ℝ) 1 := (Set.mem_prod.1 (hA_sub hpA)).2
       sorry
+
     choose x₁ x₂ hx₁ hx₂ h_pn_in_seg_n h_seg_subset_n using h_seg_exists
 
     have h_in_rect : ∀ n, (x₁ n, x₂ n) ∈ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := fun n ↦ mem_prod.2 ⟨hx₁ n, hx₂ n⟩
@@ -417,6 +417,16 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
     -- I take it to be the the set {(x_1 (n_j), (x_2 (n_j))}
     -- let A : Set (ℝ × ℝ) := (fun k : ℝ×ℝ => (x1_lim n, x2_lim n)) '' (↑K)
 
+
+  have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
+      x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
+    intro v hv
+    have aux₂ : ∀ v : ℝ, ∀ n, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
+      sorry
+    choose! x₁ x₂ hx₁ hx₂ hdiff hseg using aux₂
+
+    sorry
+
   -- To prove this, we need to use property 1 maybe or 2. The proof relies on the fact that the lines are contained in teh rectangle
   have h_sub : (K : Set _) ⊆ rectangle := by
     have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
@@ -435,8 +445,14 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
     have h_pos : 0 < Metric.infDist k' (rectangle : Set (ℝ × ℝ)) := by
       have h_ne : Metric.infDist k' (rectangle : Set (ℝ × ℝ)) ≠ 0 := by
         intro h_eq
-        have h_cl : k' ∈ closure (rectangle : Set (ℝ × ℝ)) := sorry
-        have : k' ∈ rectangle := by sorry
+        have h_cl : k' ∈ closure (rectangle : Set (ℝ × ℝ)) := by
+          rw [Metric.mem_closure_iff_infDist_zero]
+          · exact h_eq
+          · dsimp [rectangle]
+            refine ⟨(0,0), ?_⟩
+            simp
+        have : k' ∈ rectangle := by
+          simpa [rect_closed.closure_eq] using h_cl
         exact h_notin this
       exact lt_of_le_of_ne Metric.infDist_nonneg h_ne.symm
 
@@ -463,6 +479,7 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
       have : dist k' y < d / 2 := hy_lt
       exact lt_of_lt_of_le this (by linarith)
     exact (not_lt_of_ge hd_le) this
+
   rw [P_collection']
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
