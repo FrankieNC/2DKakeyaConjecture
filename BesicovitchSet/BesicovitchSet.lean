@@ -130,14 +130,14 @@ theorem Nonempty_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     P.Nonempty := by
   rcases hP with ⟨-, -, -, h⟩
   rcases h 0 (by norm_num) with ⟨x₁, x₂, -, -, -, hPseg⟩
-  exact ⟨![x₁, 0], hPseg <| by apply left_mem_segment⟩
+  exact ⟨![x₁, 0], hPseg <| left_mem_segment _ _ _⟩
 
 theorem IsBounded_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     IsBounded P := by
   rcases hP with ⟨-, h_subset, -⟩
-  have h_rect_bdd : IsBounded rectangle := by
+  have : IsBounded rectangle := by
     simp [rectangle, isBounded_Icc]
-  exact h_rect_bdd.subset h_subset
+  exact this.subset h_subset
 
 theorem IsCompact_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     IsCompact P := by
@@ -154,7 +154,7 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 
 open Filter
 
-theorem 𝓟_IsClosed : IsClosed P_collection' := by
+theorem P_col'_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
   intro Pₙ K h_mem h_lim
   have h_closed : IsClosed (K : Set (Fin 2 → ℝ)) := (K.toCompacts.isCompact).isClosed
