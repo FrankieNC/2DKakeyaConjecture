@@ -419,39 +419,50 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
 
   -- To prove this, we need to use property 1 maybe or 2. The proof relies on the fact that the lines are contained in teh rectangle
   have h_sub : (K : Set _) ⊆ rectangle := by
-    intro k' hk'
     have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
       intro n
-      specialize h_mem n
-      obtain ⟨_, ⟨h⟩⟩ := h_mem
-      exact h
+      rcases h_mem n with ⟨_, h_subset, _, _⟩
+      exact h_subset
     have rect_closed : IsClosed rectangle := by
       rw [rectangle]
       simp only [Icc_prod_Icc]
       exact isClosed_Icc
-    apply rect_closed.isSeqClosed h_p_rect
-    have : Tendsto (fun n ↦ pₙ n) atTop (𝓝 k') := by
-      rw [Metric.tendsto_atTop]
-      intro ε hε
-      specialize h_lim ε hε
-      rcases h_lim with ⟨N, hN⟩
-      use N
-      intro n hn
-      calc
-        dist (pₙ n) k' ≤ dist (Pₙ n) K := by
-          specialize hpₙ_lt n
-          sorry
-        _ < ε := by
-          simp only [Metric.NonemptyCompacts.dist_eq]
-          specialize hN n
-          apply hN
-          exact hn
-    exact this
 
-    -- rw [← closure_eq_iff_isClosed] at rect_closed
-    -- apply IsClosed.isSeqClosed at rect_closed
-    -- rw [IsSeqClosed] at rect_closed
-    -- exact rect_closed.isSeqClosed h_p_rect h_tendsto
+    -- Main argument
+    intro k' hk'
+    by_contra h_notin
+
+    have h_pos : 0 < Metric.infDist k' (rectangle : Set (ℝ × ℝ)) := by
+      have h_ne : Metric.infDist k' (rectangle : Set (ℝ × ℝ)) ≠ 0 := by
+        intro h_eq
+        have h_cl : k' ∈ closure (rectangle : Set (ℝ × ℝ)) := sorry
+        have : k' ∈ rectangle := by sorry
+        exact h_notin this
+      exact lt_of_le_of_ne Metric.infDist_nonneg h_ne.symm
+
+    set d : ℝ := Metric.infDist k' (rectangle : Set (ℝ × ℝ)) with hd
+    have h_half_pos : 0 < d / 2 := by linarith
+    obtain ⟨N, hN⟩ := h_lim (d / 2) h_half_pos
+
+    have h_haus : hausdorffDist (K : Set (ℝ × ℝ)) (Pₙ N : Set _) < d / 2 := by
+      have : dist (Pₙ N) K < d / 2 := hN N (le_rfl)
+      simpa [Metric.NonemptyCompacts.dist_eq, dist_comm] using this
+
+    have h_edist_ne : EMetric.hausdorffEdist (K : Set (ℝ × ℝ)) (Pₙ N : Set _) ≠ ⊤ := by
+      simpa [EMetric.hausdorffEdist_comm] using fin_dist N
+
+    obtain ⟨y, hyP, hy_lt⟩ := Metric.exists_dist_lt_of_hausdorffDist_lt hk' h_haus h_edist_ne
+
+    have hy_rect : y ∈ rectangle := (hP_sub N) hyP
+
+    have hd_le : d ≤ dist k' y := by
+      have h_le := Metric.infDist_le_dist_of_mem (x := k') hy_rect
+      simpa [hd] using h_le
+
+    have : dist k' y < d := by
+      have : dist k' y < d / 2 := hy_lt
+      exact lt_of_lt_of_le this (by linarith)
+    exact (not_lt_of_ge hd_le) this
   rw [P_collection']
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
