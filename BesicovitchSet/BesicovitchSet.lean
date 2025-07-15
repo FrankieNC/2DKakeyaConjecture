@@ -387,7 +387,7 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   --   sorry
 
   -- This is the x_1 x_2 sub n sequences stuff
-  have h_comp : IsCompact (Icc (-1 : ℝ) 1 ×ˢ Icc (-1) 1) := (isCompact_Icc.prod isCompact_Icc)
+  have h_comp : IsCompact (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := (isCompact_Icc.prod isCompact_Icc)
   -- I think I have to put the sequence have statements in the respective proofs
 
   -- This is for the proof of prop 1
@@ -410,6 +410,7 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
 
     choose x₁ x₂ hx₁ hx₂ h_pn_in_seg_n h_seg_subset_n using h_seg_exists
 
+
     set A : Set (ℝ × ℝ) := closure (Set.range fun n : ℕ ↦ (x₁ n, x₂ n)) with hA
 
     have hA_sub : A ⊆ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := by
@@ -422,35 +423,31 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
 
     have h_cover : (K : Set (ℝ × ℝ)) ⊆ ⋃ p ∈ A, segment01 p.1 p.2 := by
       intro k' hk'
-      have : ∀ j : ℕ, ∃ n ≥ j, dist (Pₙ n) K < (1 : ℝ) / (j + 1) := by
-        intro j
-        have h_pos : (0 : ℝ) < 1 / (j + 1) := by
-          have : (0 : ℝ) < (j + 1 : ℝ) := Nat.cast_add_one_pos j
-          exact one_div_pos.2 this
-        obtain ⟨N, hN⟩ := h_lim _ h_pos
-        exact ⟨max N j, le_max_right _ _, hN _ (le_max_left _ _)⟩
 
-      choose n₀ hn₀_ge hn₀_small using this
+      have h_pair_mem : ∀ n, (x₁ n, x₂ n) ∈ (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := by
+        intro n
+        exact mk_mem_prod (hx₁ n) (hx₂ n)
 
-      set φ : ℕ → ℕ := n₀ with hφ
+      rcases h_comp.tendsto_subseq h_pair_mem with ⟨p, hp_in, φ, hφ_mono, hφ_lim⟩
+      set a₁ : ℝ := p.1
+      set a₂ : ℝ := p.2
 
-      have hφ_mono : StrictMono φ := by
-        intro i j hij
-        -- exact lt_of_lt_of_le hij (hn₀_ge j)
-        sorry
-
-      have h_pj : ∀ j : ℕ, ∃ p, p ∈ Pₙ (φ j) ∧ dist p k' ≤ dist K (Pₙ (φ j)) := by
-        intro j
-        -- have fin : fin_dist (φ j)
-        sorry
-
-      choose q hq_mem hq_dist using h_pj
-
-      have hx_sub : ∀ j, (x₁ (φ j), x₂ (φ j)) ∈ Set.range (fun n : ℕ ↦ (x₁ n, x₂ n)) := by
-        intro j
-        exact ⟨φ j, rfl⟩
+      have ha₁ : a₁ ∈ Icc (-1 : ℝ) 1 := by simpa [a₁] using hp_in.1
+      have ha₂ : a₂ ∈ Icc (-1 : ℝ) 1 := by simpa [a₂] using hp_in.2
 
       sorry
+    -- have h_cover : (K : Set (ℝ × ℝ)) ⊆ ⋃ p ∈ A, segment01 p.1 p.2 := by
+    --   intro k' hk'
+    --   have : ∀ j : ℕ, ∃ n ≥ j, dist (Pₙ n) K < (1 : ℝ) / (j + 1) := by
+    --     intro j
+    --     have h_pos : (0 : ℝ) < 1 / (j + 1) := by
+    --       have : (0 : ℝ) < (j + 1 : ℝ) := Nat.cast_add_one_pos j
+    --       exact one_div_pos.2 this
+    --     obtain ⟨N, hN⟩ := h_lim _ h_pos
+    --     exact ⟨max N j, le_max_right _ _, hN _ (le_max_left _ _)⟩
+
+    --   choose n₀ hn₀_ge hn₀_small using this
+    --   sorry
 
     have h_seg_subset_K : (⋃ p ∈ A, segment01 p.1 p.2) ⊆ (K : Set _) := by
       intro y hy
@@ -489,11 +486,57 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
       x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
     intro v hv
-    have aux₂ : ∀ v : ℝ, ∀ n, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
-      sorry
-    choose! x₁ x₂ hx₁ hx₂ hdiff hseg using aux₂
+    have h_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
+      intro n
+      rcases h_mem n with ⟨_, _, _, h_prop₂⟩
+      simpa using h_prop₂ v hv
+    choose! x₁ x₂ hx₁ hx₂ hdiff h_segP using h_exists
 
-    sorry
+    have h_pair_mem : ∀ n, (x₁ n, x₂ n) ∈ (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := by
+      intro n
+      exact mk_mem_prod (hx₁ n) (hx₂ n)
+
+    rcases h_comp.tendsto_subseq h_pair_mem with ⟨p, hp_in, φ, hφ_mono, hφ_lim⟩
+    set a₁ : ℝ := p.1
+    set a₂ : ℝ := p.2
+
+    have ha₁ : a₁ ∈ Icc (-1 : ℝ) 1 := by simpa [a₁] using hp_in.1
+    have ha₂ : a₂ ∈ Icc (-1 : ℝ) 1 := by simpa [a₂] using hp_in.2
+
+    have h_gap : a₂ - a₁ = v := by
+      have h_sub_lim : Tendsto (fun n : ℕ ↦ x₂ (φ n) - x₁ (φ n)) atTop (𝓝 (a₂ - a₁)) := by
+        -- simpa [a₁, a₂] using (tendsto_sub ((tendsto_snd.comp hφ_lim)) ((tendsto_fst.comp hφ_lim)))
+        sorry
+      have h_const : Tendsto (fun _ : ℕ ↦ v) atTop (𝓝 v) := tendsto_const_nhds
+      have h_ident : (fun n : ℕ ↦ x₂ (φ n) - x₁ (φ n)) = fun _ ↦ v := by
+        funext n
+        sorry
+      sorry
+      -- simpa [h_ident] using tendsto_nhds_unique h_const h_sub_lim
+
+    have h_segK : segment01 a₁ a₂ ⊆ (K : Set (ℝ × ℝ)) := by
+      intro y hy
+      -- this rcases needs to be fixed
+      rcases hy with ⟨t, w, ht0, ht1⟩
+
+      have h_y_in_P : ∀ n, (1 - t) • (x₁ (φ n), (0 : ℝ)) + t • (x₂ (φ n), (1 : ℝ)) ∈ (Pₙ (φ n) : Set (ℝ × ℝ)) := by
+        intro n
+        have : (1 - t) • (x₁ (φ n), 0) + t • (x₂ (φ n), 1) ∈ segment01 (x₁ (φ n)) (x₂ (φ n)) := by
+          sorry
+          -- exact ⟨t, ht0, ht1, by ring⟩
+        exact (h_segP (φ n)) this
+
+      have h_tendsto_y : Tendsto (fun n ↦ (1 - t) • (x₁ (φ n), 0) + t • (x₂ (φ n), 1)) atTop (𝓝 y) := by
+        sorry
+
+      -- missing a have statemtn here
+
+      have hyK : y ∈ K := by
+        sorry
+
+      exact hyK
+
+    exact ⟨a₁, a₂, ha₁, ha₂, h_gap, h_segK⟩
 
   -- To prove this, we need to use property 1 maybe or 2. The proof relies on the fact that the lines are contained in teh rectangle
   have h_sub : (K : Set _) ⊆ rectangle := by
@@ -517,8 +560,7 @@ theorem 𝓟_IsClosed : IsClosed P_collection' := by
           rw [Metric.mem_closure_iff_infDist_zero]
           · exact h_eq
           · dsimp [rectangle]
-            refine ⟨(0,0), ?_⟩
-            simp
+            refine ⟨(0,0), (by simp)⟩
         have : k' ∈ rectangle := by
           simpa [rect_closed.closure_eq] using h_cl
         exact h_notin this
@@ -577,7 +619,7 @@ theorem exists_besicovitch_set :
 
 
 -- /-- In ℝ, there exists a Kakeya set. -/
--- theorem one_dim_exists_kakeya : ∃ s : Set ℝ, IsKakeya s := ⟨closedBall (0 : ℝ) 1, IsKakeya.ball⟩
+theorem one_dim_exists_kakeya : ∃ s : Set ℝ, IsKakeya s := ⟨closedBall (0 : ℝ) 1, IsKakeya.ball⟩
 
 -- /-- Any Kakeya set in `ℝ` contains a closed unit‐length interval. -/
 -- lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
