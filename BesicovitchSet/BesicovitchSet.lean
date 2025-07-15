@@ -134,41 +134,10 @@ theorem Nonempty_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
 
 theorem IsBounded_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     IsBounded (P : Set (Fin 2 → ℝ)) := by
-  obtain ⟨h_closed, h_subset, _⟩ := hP
-  rw [isBounded_iff]
-  use 10
-  intro x hx y hy
-  have hx_rect := h_subset hx
-  have hy_rect := h_subset hy
-  rcases hx_rect with ⟨hfx₀, hfx₁⟩
-  rcases hy_rect with ⟨hfy₀, hfy₁⟩
-  have hx_bound : |x 0 - y 0| ≤ (2 : ℝ) := by
-    calc
-      |x 0 - y 0| ≤ |x 0| + |y 0| := abs_sub _ _
-      _ ≤ 1 + 1 := by refine add_le_add (abs_le.2 ⟨hfx₀ 0, hfx₁ 0⟩) (abs_le.2 ⟨hfy₀ 0, hfy₁ 0⟩)
-      _ ≤ 2 := by norm_num
-  have hy_bound : |x 1 - y 1| ≤ (2 : ℝ) := by
-    calc
-      |x 1 - y 1| ≤ |x 1| + |y 1| := abs_sub _ _
-      _ ≤ 1 + 1 := by
-        have hx1_abs : |x 1| ≤ (1 : ℝ) := by
-          have h_nonneg : (0 : ℝ) ≤ x 1 := hfx₀ 1
-          have h_le1 : x 1 ≤ 1 := hfx₁ 1
-          simpa [abs_of_nonneg h_nonneg] using h_le1
-        have hy1_abs : |y 1| ≤ (1 : ℝ) := by
-          have h_nonneg : (0 : ℝ) ≤ y 1 := hfy₀ 1
-          have h_le1 : y 1 ≤ 1 := hfy₁ 1
-          simpa [abs_of_nonneg h_nonneg] using h_le1
-        exact add_le_add hx1_abs hy1_abs
-      _ ≤ 2 := by norm_num
-  calc
-    dist x y = ‖x - y‖ := rfl
-    _ ≤ |(x - y) 0| + |(x - y) 1| := by
-      -- rw [← norm_eq_abs, ← norm_eq_abs]
-      -- apply norm_sum_le (x - y)
-      sorry
-    _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
-    _ ≤ 10 := by norm_num
+  rcases hP with ⟨-, h_subset, -⟩
+  have h_rect_bdd : IsBounded (rectangle : Set (Fin 2 → ℝ)) := by
+    simp [rectangle, isBounded_Icc]
+  exact h_rect_bdd.subset h_subset
 
 theorem IsCompact_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     IsCompact (P : Set (Fin 2 → ℝ)) := by
