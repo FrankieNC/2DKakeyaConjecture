@@ -95,7 +95,7 @@ def IsBesicovitch {n : ℕ} (s : Set (Fin n → ℝ)) : Prop := IsKakeya s ∧ v
 
 end
 
-namespace temp
+section
 
 def rectangle : Set (Fin 2 → ℝ) := Icc ![-1, 0] ![1,1]
 
@@ -154,6 +154,12 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
 
 open Filter
 
+lemma prop_ii_equiv {P : Set (Fin 2 → ℝ)} :
+    (∀ (v : ℝ), |v| ≤ (1/2 : ℝ) → ∃ x₁ x₂ : ℝ, x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P)
+    ↔
+    (∀ (v : ℝ), |v| ≤ (1/2 : ℝ) → ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, 1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ P) := by
+  sorry
+
 theorem P_col'_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
   intro Pₙ K h_mem h_lim
@@ -164,10 +170,10 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
   have hK_bdd : IsBounded (K : Set (Fin 2 → ℝ)) := (K.toCompacts.isCompact).isBounded
   have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := hausdorffEdist_ne_top_of_nonempty_of_bounded (Pₙ n).nonempty K.nonempty (hPn_bdd n) hK_bdd
 
-  obtain ⟨k, hk⟩ := K.nonempty
+  -- obtain ⟨k, hk⟩ := K.nonempty
 
-  have : ∀ n, ∃ p ∈ Pₙ n, dist p k ≤ dist K (Pₙ n) := by
-    intro n
+  have : ∀ k ∈ K, ∀ n, ∃ p ∈ Pₙ n, dist p k ≤ dist K (Pₙ n) := by
+    intro k hk n
     simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
     obtain ⟨p, hp_mem, hp_eq⟩ := (Pₙ n).isCompact.exists_infDist_eq_dist (Pₙ n).nonempty k
     have hpk : dist p k = Metric.infDist k (Pₙ n : Set _) := by
@@ -182,18 +188,16 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   choose pₙ hpₙ_mem hpₙ_lt using this
 
-  have h_tendsto : Tendsto pₙ atTop (𝓝 k) := by
+  have h_tendsto : ∀ (k : Fin 2 → ℝ) (hk : k ∈ K), Tendsto (fun n ↦  pₙ k hk n) atTop (𝓝 k) := by
+    intro k hk
     rw [NormedAddCommGroup.tendsto_atTop']
     intro ε hε
     obtain ⟨N, hN⟩ := h_lim ε hε
-    refine ⟨N, ?_⟩
-    intro n hn
-    have h_le : dist (pₙ n) k ≤ dist K (Pₙ n) := hpₙ_lt n
+    refine ⟨N, fun n hn ↦ ?_⟩
+    have h_le : dist (pₙ k hk n) k ≤ dist K (Pₙ n) := hpₙ_lt k hk n
     have h_small : dist K (Pₙ n) < ε := by
-      have := hN n (Nat.le_of_lt hn)
-      simpa [dist_comm] using this
-    have : dist (pₙ n) k < ε := lt_of_le_of_lt h_le h_small
-    simpa [dist_eq] using this
+      simpa [dist_comm] using hN n (Nat.le_of_lt hn)
+    exact lt_of_le_of_lt h_le h_small
 
   have h_sub : (K : Set _) ⊆ rectangle := by
     have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
@@ -247,29 +251,29 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   have h_union : ∃ A ⊆ Icc ![-1, -1] ![1, 1], K = ⋃ p ∈ A, segment01 (p 0) (p 1) := by
 
-    have h_seg_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ pₙ n ∈ segment01 x₁ x₂ ∧ segment01 x₁ x₂ ⊆ (Pₙ n : Set _) := by
+    have h_seg_exists : ∀ n, ∃ (x : Fin 2 → ℝ), x ∈ Icc ![-1, -1] ![1, 1] ∧ pₙ n ∈ segment01 (x 0) (x 1) ∧ segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
       intro n
-      rcases h_mem n with ⟨_, h_sub_rect, ⟨A, hA_sub, hA_eq⟩, _⟩
-      have hpₙ : (pₙ n)  ∈ (Pₙ n : Set _) := hpₙ_mem n
-      have hp_union : (pₙ n) ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
-        simpa [hA_eq] using hpₙ
-      rcases mem_iUnion.1 hp_union with ⟨p, hp_union'⟩
-      rcases mem_iUnion.1 hp_union' with ⟨hpA, hp_seg⟩
-      have h_coord : (p 0, p 1) ∈ (Icc (-1 : ℝ) 1).prod (Icc (-1 : ℝ) 1) := by
+      rcases h_mem n with ⟨_, _, ⟨A, hA_sub, hA_eq⟩, _⟩
+      have hp_union : pₙ n ∈ ⋃ (p : Fin 2 → ℝ) (h : p ∈ A), segment01 (p 0) (p 1) := by
         sorry
-      have hx₁ : (p 0) ∈ Icc (-1 : ℝ) 1 := h_coord.1
-      have hx₂ : (p 1) ∈ Icc (-1 : ℝ) 1 := h_coord.2
-      have h_seg_sub : segment01 (p 0) (p 1) ⊆ (Pₙ n : Set _) := by
-        intro x hx
-        have : x ∈ ⋃ q ∈ A, segment01 (q 0) (q 1) := by
-          exact mem_biUnion hpA hx
-        simpa [hA_eq] using this
-      exact ⟨(p 0), (p 1), hx₁, hx₂, hp_seg, h_seg_sub⟩
+        -- simp [hA_eq]
+      rcases mem_iUnion.1 hp_union with ⟨p, ⟨hpA, hp_seg⟩⟩
+      let x : Fin 2 → ℝ := ![p 0, p 1]
+      have hx : x ∈ Icc ![-1,-1] ![1,1] := by
+        sorry
+      have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
+        rintro y hy
+        have : y ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
+          sorry
+          -- simpa [x] using hy
+        -- simp [hA_eq] at this
+        -- exact this
+        sorry
+      sorry
 
-    choose x₁ x₂ hx₁ hx₂ h_pn_in_seg_n h_seg_subset_n using h_seg_exists
+    choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
 
-    obtain ⟨x₁_lim, hx₁_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx₁
-    obtain ⟨x₂_lim, hx₂_lim_mem, ψ, hψ, hψ_lim⟩ := isCompact_Icc.tendsto_subseq hx₁
+    obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
 
     set A : Set (Fin 2 → ℝ) := { p | p ∈ Icc ![-1,-1] ![1,1] ∧ segment01 (p 0) (p 1) ⊆ (K : Set (Fin 2 → ℝ)) } with hA
 
@@ -281,16 +285,17 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       ext k'
       simp only [SetLike.mem_coe, Fin.isValue, mem_iUnion, exists_prop]
       constructor
-      · intro hk'
-        set p_lim : Fin 2 → ℝ := ![x₁_lim, x₂_lim] with hp_lim
-        have hp_lim_mem : p_lim ∈ Icc ![-1, -1] ![1, 1] := by
-          simp_all [Pi.le_def, Fin.forall_fin_two]
-        have h_seg_lim_sub : segment01 x₁_lim x₂_lim ⊆ (K : Set _) := by
-          sorry
-        have aux : k' ∈ segment01 (p_lim 0) (p_lim 1) := by
-          sorry
-        have : p_lim ∈ A := ⟨hp_lim_mem, h_seg_lim_sub⟩
-        exact ⟨p_lim, this, aux⟩
+      · sorry
+        -- intro hk'
+        -- set p_lim : Fin 2 → ℝ := ![x₁_lim, x₂_lim] with hp_lim
+        -- have hp_lim_mem : p_lim ∈ Icc ![-1, -1] ![1, 1] := by
+        --   simp_all [Pi.le_def, Fin.forall_fin_two]
+        -- have h_seg_lim_sub : segment01 x₁_lim x₂_lim ⊆ (K : Set _) := by
+        --   sorry
+        -- have aux : k' ∈ segment01 (p_lim 0) (p_lim 1) := by
+        --   sorry
+        -- have : p_lim ∈ A := ⟨hp_lim_mem, h_seg_lim_sub⟩
+        -- exact ⟨p_lim, this, aux⟩
       · rintro ⟨p, ⟨hp₁, hp₂⟩, hx_seg⟩
         exact hp₂ hx_seg
 
@@ -298,25 +303,22 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂, x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ K := by
     intro v hv
-    have h_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
-      intro n
-      rcases h_mem n with ⟨_, _, _, h_prop₂⟩
-      simpa using h_prop₂ v hv
+    have h_exists : ∀ n, ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, 1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ Pₙ n := by
+      sorry
 
-    choose! x₁ x₂ hx₁ hx₂ hdiff h_segP using h_exists
+    choose! x hx hdiff h_segP using h_exists
 
-    obtain ⟨x₁_lim, hx₁_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx₁
-    obtain ⟨x₂_lim, hx₂_lim_mem, ψ, hψ, hψ_lim⟩ := isCompact_Icc.tendsto_subseq hx₁
+    obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
 
-    have hdiff_lim : x₂_lim - x₁_lim = v := by
+    have hdiff_lim : (x_lim 1) - (x_lim 0) = v := by
       sorry
       --  simpa [hdiff] using (congr_arg₂ (· - ·) (hψ_lim : _ = _) (hφ_lim : _ = _))
 
-    have h_segK : segment01 x₁_lim x₂_lim ⊆ (K : Set _) := by
+    have h_segK : segment01 (x_lim 0) (x_lim 1) ⊆ (K : Set _) := by
       rintro y hy
       sorry
 
-    exact ⟨x₁_lim, x₂_lim, hx₁_lim_mem, hx₂_lim_mem, hdiff_lim, h_segK⟩
+    sorry
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
@@ -341,418 +343,6 @@ theorem exists_besicovitch_set :
     ∃ B : Set (Fin 2 → ℝ), IsBesicovitch B := by
   obtain ⟨B, hB⟩ := exists_zero_measure_set
   use B
-  sorry
-
-end temp
-
-
-section
-
-/-- The rectangle [-1,1] × [0,1] -/
-def rectangle : Set (ℝ × ℝ) := Icc (-1) 1 ×ˢ Icc 0 1
-
-/-- The segment from (x₁, 0) to (x₂, 1). -/
-def segment01 (x₁ x₂ : ℝ) : Set (ℝ × ℝ) :=
-  segment ℝ (x₁, 0) (x₂, 1)
-
-/-- Collection 𝒫 of subsets P ⊆ [-1,1] × [0,1] satisfying (i) and (ii) -/
-def P_collection : Set (Set (ℝ × ℝ)) :=
-  { P | IsClosed P ∧ P ⊆ rectangle ∧
-    -- (i) P is a union of line segments from (x₁, 0) to (x₂, 1)
-    (∃ A : Set (ℝ × ℝ), A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1 ∧
-      P = ⋃ (p ∈ A), segment01 p.1 p.2) ∧
-    -- (ii) for all v with |v| ≤ 1/2, there exists x₁, x₂ ∈ [-1,1] with x₂ - x₁ = v and segment ⊆ P
-    (∀ v : ℝ, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1
-        ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
-
-/-- Define 𝒦 as the collection of non-empty compact subsets of ℝ² -/
-def P_collection' : Set (NonemptyCompacts (ℝ × ℝ)) :=
-  { P | IsClosed (P : Set (ℝ × ℝ)) ∧ (P : Set (ℝ × ℝ)) ⊆ rectangle ∧
-    -- (i) P is a union of line segments from (x₁, 0) to (x₂, 1)
-    (∃ A : Set (ℝ × ℝ), A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1 ∧
-      P = ⋃ (p ∈ A), segment01 p.1 p.2) ∧
-    -- (ii) for all v with |v| ≤ 1/2, there exists x₁, x₂ ∈ [-1,1] with x₂ - x₁ = v and segment ⊆ P
-    (∀ v : ℝ, |v| ≤ 1/2 → ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1
-        ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
-
-theorem P_is_bounded {P : NonemptyCompacts (ℝ × ℝ)} (hP : P ∈ P_collection') :
-    IsBounded (P : Set (ℝ × ℝ)) := by
-  obtain ⟨h₁, h₂, _⟩ := hP
-  rw [isBounded_iff]
-  use 10
-  intro x hx y hy
-  have ⟨hfx₁, hfx₂⟩ := h₂ hx
-  have ⟨hfy1, hfy2⟩ := h₂ hy
-  have hx_bound : |x.1 - y.1| ≤ 2 := by
-    calc
-      |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
-      _ ≤ 1 + 1 := by
-        refine add_le_add (abs_le.2 (mem_Icc.1 hfx₁)) (abs_le.2 (mem_Icc.1 hfy1))
-      _ ≤ 2 := by norm_num
-  have hy_bound : |x.2 - y.2| ≤ 2 := by
-    calc
-      |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub _ _
-      _ ≤ 1 + 1 := by
-        have hx2 : |x.2| ≤ 1 := by
-          have hx2_nonneg : (0 : ℝ) ≤ x.2 := (mem_Icc.1 hfx₂).1
-          have hx2_le1 : x.2 ≤ 1 := (mem_Icc.1 hfx₂).2
-          simpa [abs_of_nonneg hx2_nonneg] using hx2_le1
-        have hy2 : |y.2| ≤ 1 := by
-          have hy2_nonneg : (0 : ℝ) ≤ y.2 := (mem_Icc.1 hfy2).1
-          have hy2_le1 : y.2 ≤ 1 := (mem_Icc.1 hfy2).2
-          simpa [abs_of_nonneg hy2_nonneg] using hy2_le1
-        exact add_le_add hx2 hy2
-      _ ≤ 2 := by norm_num
-  calc
-    dist x y = ‖x - y‖ := rfl
-    _ ≤ |(x - y).1| + |(x - y).2| := by aesop
-    _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
-    _ ≤ 10 := by norm_num
-
-/-- The carrier image of `P_collection'` recovers the original set-level collection `P_collection`. -/
-theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
-  ext P
-  constructor
-  · rintro ⟨Q, hQ, rfl⟩
-    exact hQ
-  · intro hP
-    have h_compact : IsCompact P := by
-      rw [isCompact_iff_isClosed_bounded]
-      obtain ⟨h₁, h₂, _⟩ := hP
-      constructor
-      · exact h₁
-      · rw [isBounded_iff]
-        use 10
-        intro x hx y hy
-        have ⟨hfx₁, hfx₂⟩ := h₂ hx
-        have ⟨hfy1, hfy2⟩ := h₂ hy
-        have hx_bound : |x.1 - y.1| ≤ 2 := by
-          calc
-            |x.1 - y.1| ≤ |x.1| + |y.1| := abs_sub x.1 y.1
-            _ ≤ 1 + 1 := by
-              have : |x.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfx₁)
-              have : |y.1| ≤ 1 := abs_le.2 (mem_Icc.1 hfy1)
-              (expose_names; exact add_le_add this_1 this)
-            _ = 2 := by norm_num
-        have hy_bound : |x.2 - y.2| ≤ 2 := by
-          calc
-            |x.2 - y.2| ≤ |x.2| + |y.2| := abs_sub x.2 y.2
-            _ ≤ 1 + 1 := by
-              apply add_le_add
-              · apply abs_le.2
-                constructor -- From here on it is all Yuming
-                · have : 0 ≤ x.2 := by aesop
-                  have : (-1 : ℝ) ≤ 0 := by norm_num
-                  expose_names; exact le_trans this this_1
-                · aesop
-              · apply abs_le.2
-                constructor
-                · have : 0 ≤ y.2 := by aesop
-                  have : (-1 : ℝ) ≤ 0 := by norm_num
-                  expose_names; exact le_trans this this_1
-                · aesop
-            _ = 2 := by norm_num
-        calc
-          dist x y = ‖x - y‖ := rfl
-          _ ≤ |(x - y).1| + |(x - y).2| := by aesop
-          _ ≤ 2 + 2 := add_le_add hx_bound hy_bound
-          _ ≤ 10 := by norm_num
-    have h_nonempty : P.Nonempty := by
-      have h_seg_exists : ∃ x ∈ Icc (-1 : ℝ) 1, segment01 x x ⊆ P := by
-        obtain ⟨_, _, _, h⟩ := hP
-        specialize h 0 (by norm_num)
-        obtain ⟨x₁, x₂, h₁, _, h₂⟩ := h
-        have : x₁ = x₂ := by linarith [h₂]
-        subst this
-        obtain ⟨_, h₂⟩ := h₂
-        exact ⟨x₁, h₁, h₂⟩
-      rcases h_seg_exists with ⟨x, hx, h_seg⟩
-      use (x, 0)
-      exact h_seg (left_mem_segment ℝ (x, 0) (x, 1))
-    simp only [mem_image]
-    let Q : NonemptyCompacts (ℝ × ℝ) := ⟨⟨P, h_compact⟩, h_nonempty⟩
-    use Q
-    exact ⟨hP, rfl⟩
-
-open Filter
-
--- attribute [-instance] Scott.topologicalSpace
-
-theorem 𝓟_IsClosed : IsClosed P_collection' := by
-  rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
-  intro Pₙ K h_mem h_lim
-  have h_closed : IsClosed (K : Set (ℝ × ℝ)) := (K.toCompacts.isCompact).isClosed
-  rw [Metric.tendsto_atTop] at h_lim
-  -- simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
-  have hPn_bdd (n : ℕ) : IsBounded (Pₙ n : Set (ℝ × ℝ)) := P_is_bounded (h_mem n)
-  have hK_bdd : IsBounded (K : Set (ℝ × ℝ)) := (K.toCompacts.isCompact).isBounded
-  have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (ℝ × ℝ)) ≠ ⊤ := by
-    apply Metric.hausdorffEdist_ne_top_of_nonempty_of_bounded
-    exact NonemptyCompacts.nonempty (Pₙ n)
-    · exact NonemptyCompacts.nonempty K
-    · exact hPn_bdd n
-    · exact hK_bdd
-
-  obtain ⟨k, hk_in_K⟩ := K.nonempty
-
-  have : ∀ n, ∃ p ∈ Pₙ n, dist p (k) ≤ dist K (Pₙ n) := by
-    intro n
-    simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
-    obtain ⟨p, hp_mem, hp_eq⟩ := (Pₙ n).isCompact.exists_infDist_eq_dist (Pₙ n).nonempty k
-    have hpk : dist p k = Metric.infDist k (Pₙ n : Set _) := by
-      simpa [eq_comm, dist_comm] using hp_eq
-    have fin : EMetric.hausdorffEdist (K : Set (ℝ × ℝ)) (Pₙ n : Set _) ≠ ⊤ := by
-      simpa [EMetric.hausdorffEdist_comm] using fin_dist n
-    have h_le : Metric.infDist k (Pₙ n : Set _) ≤ Metric.hausdorffDist (K : Set (ℝ × ℝ)) (Pₙ n : Set _) := by
-      apply Metric.infDist_le_hausdorffDist_of_mem (x := k) (s := (K : Set _)) (t := (Pₙ n : Set _)) hk_in_K fin
-    have h_dist : dist p k ≤ dist K (Pₙ n) := by
-      simpa [Metric.NonemptyCompacts.dist_eq, hpk] using h_le
-    exact ⟨p, hp_mem, h_dist⟩
-
-  choose pₙ hpₙ_mem hpₙ_lt using this
-
-  have h_tendsto : Tendsto pₙ atTop (𝓝 k) := by
-    rw [NormedAddCommGroup.tendsto_atTop']
-    intro ε hε
-    obtain ⟨N, hN⟩ := h_lim ε hε
-    refine ⟨N, ?_⟩
-    intro n hn
-    have h_le : dist (pₙ n) k ≤ dist K (Pₙ n) := hpₙ_lt n
-    have h_small : dist K (Pₙ n) < ε := by
-      have := hN n (Nat.le_of_lt hn)
-      simpa [dist_comm] using this
-    have : dist (pₙ n) k < ε := lt_of_le_of_lt h_le h_small
-    simpa [dist_eq] using this
-
-  -- have h_p_rect : ∀ n, pₙ n ∈ rectangle := by
-  --   intro n
-  --   sorry
-
-  -- This is the x_1 x_2 sub n sequences stuff
-  have h_comp : IsCompact (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := (isCompact_Icc.prod isCompact_Icc)
-  -- I think I have to put the sequence have statements in the respective proofs
-
-  -- This is for the proof of prop 1
-  have h_union : ∃ A ⊆ Icc (-1) 1 ×ˢ Icc (-1) 1, ↑K = ⋃ p ∈ A, segment01 p.1 p.2 := by
-    have h_seg_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ pₙ n ∈ segment01 x₁ x₂ ∧ segment01 x₁ x₂ ⊆ (Pₙ n : Set _) := by
-      intro n
-      rcases h_mem n with ⟨_, h_sub_rect, ⟨A, hA_sub, hA_eq⟩, _⟩
-      have hpₙ : (pₙ n)  ∈ (Pₙ n : Set _) := hpₙ_mem n
-      have hp_union : (pₙ n) ∈ ⋃ p ∈ A, segment01 p.1 p.2 := by
-        simpa [hA_eq] using hpₙ
-      rcases mem_iUnion.1 hp_union with ⟨p, hp_union'⟩
-      rcases mem_iUnion.1 hp_union' with ⟨hpA, hp_seg⟩
-      rcases Set.mem_prod.1 (hA_sub hpA) with ⟨hx₁, hx₂⟩
-      have h_seg_subset : segment01 p.1 p.2 ⊆ (Pₙ n : Set _) := by
-        intro x hx
-        have : x ∈ ⋃ q ∈ A, segment01 q.1 q.2 := by
-          exact mem_biUnion hpA hx
-        simpa [hA_eq] using this
-      exact ⟨p.1, p.2, hx₁, hx₂, hp_seg, h_seg_subset⟩
-
-    choose x₁ x₂ hx₁ hx₂ h_pn_in_seg_n h_seg_subset_n using h_seg_exists
-
-
-    set A : Set (ℝ × ℝ) := closure (Set.range fun n : ℕ ↦ (x₁ n, x₂ n)) with hA
-
-    have hA_sub : A ⊆ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := by
-      have h_range : (Set.range fun n : ℕ ↦ (x₁ n, x₂ n)) ⊆ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := by
-        intro p hp
-        rcases hp with ⟨n, rfl⟩
-        exact mk_mem_prod (hx₁ n) (hx₂ n)
-      have h_closed : IsClosed (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := by exact isClosed_Icc.prod isClosed_Icc
-      simpa [hA] using closure_minimal h_range h_closed
-
-    have h_cover : (K : Set (ℝ × ℝ)) ⊆ ⋃ p ∈ A, segment01 p.1 p.2 := by
-      intro k' hk'
-
-      have h_pair_mem : ∀ n, (x₁ n, x₂ n) ∈ (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := by
-        intro n
-        exact mk_mem_prod (hx₁ n) (hx₂ n)
-
-      rcases h_comp.tendsto_subseq h_pair_mem with ⟨p, hp_in, φ, hφ_mono, hφ_lim⟩
-      set a₁ : ℝ := p.1
-      set a₂ : ℝ := p.2
-
-      have ha₁ : a₁ ∈ Icc (-1 : ℝ) 1 := by simpa [a₁] using hp_in.1
-      have ha₂ : a₂ ∈ Icc (-1 : ℝ) 1 := by simpa [a₂] using hp_in.2
-
-      have h_pj : ∀ j : ℕ, ∃ p, p ∈ Pₙ (φ j) ∧ dist p k' ≤ dist K (Pₙ (φ j)) := by
-        intro j
-        sorry
-
-      choose q hq_mem hq_dist using h_pj
-
-      have hx_sub : ∀ j, (x₁ (φ j), x₂ (φ j)) ∈ Set.range (fun n : ℕ ↦ (x₁ n, x₂ n)) := by
-        intro j
-        exact ⟨φ j, rfl⟩
-      sorry
-    have h_seg_subset_K : (⋃ p ∈ A, segment01 p.1 p.2) ⊆ (K : Set _) := by
-      intro y hy
-      rcases mem_iUnion.1 hy with ⟨p, hp⟩
-      rcases mem_iUnion.1 hp with ⟨hpA, hy_seg⟩
-      have hc : segment01 p.1 p.2 ⊆ (K : Set _) := by sorry
-      exact hc hy_seg
-
-    have h_eq : (K : Set _) = ⋃ p ∈ A, segment01 p.1 p.2 := (Set.Subset.antisymm h_cover h_seg_subset_K)
-
-    exact ⟨A, hA_sub, h_eq⟩
-
-    -- have h_in_rect : ∀ n, (x₁ n, x₂ n) ∈ Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1 := fun n ↦ mem_prod.2 ⟨hx₁ n, hx₂ n⟩
-
-    -- -- This needs to be rephrased or maybe prove that the limits are in [-1,1] x [-1,1]
-    -- have h_sub_ex : ∃ (φ : ℕ → ℕ) (hφ : StrictMono φ) (x1_lim x2_lim : Icc (-1 : ℝ) 1), Tendsto (fun j ↦ x₁ (φ j)) atTop (𝓝 x1_lim) ∧ Tendsto (fun j ↦ x₂ (φ j)) atTop (𝓝 x2_lim) := by
-    --   sorry
-
-    -- choose φ hφ_strict x1_lim x2_lim h_tend₁ h_tend₂ using h_sub_ex
-    -- set L := segment01 x1_lim x2_lim with hL
-    -- have h_p_in_L : ∀ n, pₙ n ∈ L := by
-    --   intro n
-    --   rw [hL]
-    --   -- Need to show that the segements converge to this limiting segment and the result will follow
-    --   sorry
-    -- have h_L_in_K : L ⊆ ↑K := by
-    --   sorry
-    -- have k_in_L : k ∈ L := by
-    --   sorry
-    -- sorry
-    -- -- I need to define the set A:
-    -- -- I take it to be the the set {(x_1 (n_j), (x_2 (n_j))}
-    -- -- let A : Set (ℝ × ℝ) := (fun k : ℝ×ℝ => (x1_lim n, x2_lim n)) '' (↑K)
-
-
-  have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂,
-      x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
-    intro v hv
-    have h_exists : ∀ n, ∃ (x₁ x₂ : ℝ), x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ Pₙ n := by
-      intro n
-      rcases h_mem n with ⟨_, _, _, h_prop₂⟩
-      simpa using h_prop₂ v hv
-    choose! x₁ x₂ hx₁ hx₂ hdiff h_segP using h_exists
-
-    have h_pair_mem : ∀ n, (x₁ n, x₂ n) ∈ (Icc (-1 : ℝ) 1 ×ˢ Icc (-1 : ℝ) 1) := by
-      intro n
-      exact mk_mem_prod (hx₁ n) (hx₂ n)
-
-    rcases h_comp.tendsto_subseq h_pair_mem with ⟨p, hp_in, φ, hφ_mono, hφ_lim⟩
-    set a₁ : ℝ := p.1
-    set a₂ : ℝ := p.2
-
-    have ha₁ : a₁ ∈ Icc (-1 : ℝ) 1 := by simpa [a₁] using hp_in.1
-    have ha₂ : a₂ ∈ Icc (-1 : ℝ) 1 := by simpa [a₂] using hp_in.2
-
-    have h_gap : a₂ - a₁ = v := by
-      have h_sub_lim : Tendsto (fun n : ℕ ↦ x₂ (φ n) - x₁ (φ n)) atTop (𝓝 (a₂ - a₁)) := by
-        -- simpa [a₁, a₂] using (tendsto_sub ((tendsto_snd.comp hφ_lim)) ((tendsto_fst.comp hφ_lim)))
-        sorry
-      have h_const : Tendsto (fun _ : ℕ ↦ v) atTop (𝓝 v) := tendsto_const_nhds
-      have h_ident : (fun n : ℕ ↦ x₂ (φ n) - x₁ (φ n)) = fun _ ↦ v := by
-        funext n
-        sorry
-      sorry
-      -- simpa [h_ident] using tendsto_nhds_unique h_const h_sub_lim
-
-    have h_segK : segment01 a₁ a₂ ⊆ (K : Set (ℝ × ℝ)) := by
-      intro y hy
-      -- this rcases needs to be fixed
-      rcases hy with ⟨t, w, ht0, ht1⟩
-
-      have h_y_in_P : ∀ n, (1 - t) • (x₁ (φ n), (0 : ℝ)) + t • (x₂ (φ n), (1 : ℝ)) ∈ (Pₙ (φ n) : Set (ℝ × ℝ)) := by
-        intro n
-        have : (1 - t) • (x₁ (φ n), 0) + t • (x₂ (φ n), 1) ∈ segment01 (x₁ (φ n)) (x₂ (φ n)) := by
-          sorry
-          -- exact ⟨t, ht0, ht1, by ring⟩
-        exact (h_segP (φ n)) this
-
-      have h_tendsto_y : Tendsto (fun n ↦ (1 - t) • (x₁ (φ n), 0) + t • (x₂ (φ n), 1)) atTop (𝓝 y) := by
-        sorry
-
-      -- missing a have statemtn here
-
-      have hyK : y ∈ K := by
-        sorry
-
-      exact hyK
-
-    exact ⟨a₁, a₂, ha₁, ha₂, h_gap, h_segK⟩
-
-  -- To prove this, we need to use property 1 maybe or 2. The proof relies on the fact that the lines are contained in teh rectangle
-  have h_sub : (K : Set _) ⊆ rectangle := by
-    have hP_sub : ∀ n, (Pₙ n : Set _) ⊆ rectangle := by
-      intro n
-      rcases h_mem n with ⟨_, h_subset, _, _⟩
-      exact h_subset
-    have rect_closed : IsClosed rectangle := by
-      rw [rectangle]
-      simp only [Icc_prod_Icc]
-      exact isClosed_Icc
-
-    -- Main argument
-    intro k' hk'
-    by_contra h_notin
-
-    have h_pos : 0 < Metric.infDist k' (rectangle : Set (ℝ × ℝ)) := by
-      have h_ne : Metric.infDist k' (rectangle : Set (ℝ × ℝ)) ≠ 0 := by
-        intro h_eq
-        have h_cl : k' ∈ closure (rectangle : Set (ℝ × ℝ)) := by
-          rw [Metric.mem_closure_iff_infDist_zero]
-          · exact h_eq
-          · dsimp [rectangle]
-            refine ⟨(0,0), (by simp)⟩
-        have : k' ∈ rectangle := by
-          simpa [rect_closed.closure_eq] using h_cl
-        exact h_notin this
-      exact lt_of_le_of_ne Metric.infDist_nonneg h_ne.symm
-
-    set d : ℝ := Metric.infDist k' (rectangle : Set (ℝ × ℝ)) with hd
-    have h_half_pos : 0 < d / 2 := by linarith
-    obtain ⟨N, hN⟩ := h_lim (d / 2) h_half_pos
-
-    have h_haus : hausdorffDist (K : Set (ℝ × ℝ)) (Pₙ N : Set _) < d / 2 := by
-      have : dist (Pₙ N) K < d / 2 := hN N (le_rfl)
-      simpa [Metric.NonemptyCompacts.dist_eq, dist_comm] using this
-
-    have h_edist_ne : EMetric.hausdorffEdist (K : Set (ℝ × ℝ)) (Pₙ N : Set _) ≠ ⊤ := by
-      simpa [EMetric.hausdorffEdist_comm] using fin_dist N
-
-    obtain ⟨y, hyP, hy_lt⟩ := Metric.exists_dist_lt_of_hausdorffDist_lt hk' h_haus h_edist_ne
-
-    have hy_rect : y ∈ rectangle := (hP_sub N) hyP
-
-    have hd_le : d ≤ dist k' y := by
-      have h_le := Metric.infDist_le_dist_of_mem (x := k') hy_rect
-      simpa [hd] using h_le
-
-    have : dist k' y < d := by
-      have : dist k' y < d / 2 := hy_lt
-      exact lt_of_lt_of_le this (by linarith)
-    exact (not_lt_of_ge hd_le) this
-
-  rw [P_collection']
-  exact ⟨h_closed, h_sub, h_union, h_forall⟩
-
--- Lemma 2.4 goes here
-
--- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
-lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe 𝓟_IsClosed
-
-/-- The family of those `P : P_collection'` which have Lebesgue measure zero. -/
-def zero_measure_sets : Set P_collection' := { P | volume (P : Set (ℝ × ℝ)) = 0 }
-
-/-- Theorem 2.3.  The set of `P ∈ P_collection'` of Lebesgue measure zero is of second
-    category (i.e. non-meager) in the complete metric space `P_collection'`. -/
-theorem zero_measure_sets_second_category :
-    ¬ IsMeagre (zero_measure_sets : Set P_collection') := by
-  sorry
-
-theorem exists_zero_measure_set : Nonempty zero_measure_sets := by
-  rw [zero_measure_sets]
-  sorry
-
-theorem exists_besicovitch_set :
-    ∃ B : Set (Fin 2 → ℝ), IsBesicovitch B := by
-  obtain ⟨P0, hP0μ⟩ := exists_zero_measure_set
-  set B := (P0 : Set (ℝ × ℝ)) with hB
   sorry
 
 end
@@ -933,3 +523,27 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
 end
 
 end Besicovitch
+
+open Metric
+
+-- Aaron Liu (Zulip)
+theorem thing {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z : E} :
+    hausdorffDist (segment ℝ x z) (segment ℝ y z) ≤ dist x y := by
+  apply hausdorffDist_le_of_mem_dist
+  · apply dist_nonneg
+  · rintro _ ⟨b, c, hb, hc, hbc, rfl⟩
+    refine ⟨b • y + c • z, ⟨b, c, hb, hc, hbc, rfl⟩, ?_⟩
+    rw [dist_add_right]
+    apply (dist_smul_le b x y).trans
+    apply mul_le_of_le_one_left
+    · apply dist_nonneg
+    · rw [Real.norm_eq_abs, abs_of_nonneg hb]
+      linarith
+  · rintro _ ⟨b, c, hb, hc, hbc, rfl⟩
+    refine ⟨b • x + c • z, ⟨b, c, hb, hc, hbc, rfl⟩, ?_⟩
+    rw [dist_add_right, dist_comm]
+    apply (dist_smul_le b x y).trans
+    apply mul_le_of_le_one_left
+    · apply dist_nonneg
+    · rw [Real.norm_eq_abs, abs_of_nonneg hb]
+      linarith
