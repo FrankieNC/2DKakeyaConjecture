@@ -135,8 +135,7 @@ theorem Nonempty_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
 theorem IsBounded_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
     IsBounded P := by
   rcases hP with ⟨-, h_subset, -⟩
-  have : IsBounded rectangle := by
-    simp [rectangle, isBounded_Icc]
+  have : IsBounded rectangle := by simp [rectangle, isBounded_Icc]
   exact this.subset h_subset
 
 theorem IsCompact_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
@@ -170,8 +169,6 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
   have hK_bdd : IsBounded (K : Set (Fin 2 → ℝ)) := (K.toCompacts.isCompact).isBounded
   have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := hausdorffEdist_ne_top_of_nonempty_of_bounded (Pₙ n).nonempty K.nonempty (hPn_bdd n) hK_bdd
 
-  -- obtain ⟨k, hk⟩ := K.nonempty
-
   have : ∀ k ∈ K, ∀ n, ∃ p ∈ Pₙ n, dist p k ≤ dist K (Pₙ n) := by
     intro k hk n
     simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
@@ -188,7 +185,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   choose pₙ hpₙ_mem hpₙ_lt using this
 
-  have h_tendsto : ∀ (k : Fin 2 → ℝ) (hk : k ∈ K), Tendsto (fun n ↦  pₙ k hk n) atTop (𝓝 k) := by
+  have h_tendsto : ∀ (k : Fin 2 → ℝ) (hk : k ∈ K), Tendsto (fun n ↦ pₙ k hk n) atTop (𝓝 k) := by
     intro k hk
     rw [NormedAddCommGroup.tendsto_atTop']
     intro ε hε
@@ -251,29 +248,18 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   have h_union : ∃ A ⊆ Icc ![-1, -1] ![1, 1], K = ⋃ p ∈ A, segment01 (p 0) (p 1) := by
 
-    have h_seg_exists : ∀ n, ∃ (x : Fin 2 → ℝ), x ∈ Icc ![-1, -1] ![1, 1] ∧ pₙ n ∈ segment01 (x 0) (x 1) ∧ segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
-      intro n
+    have h_seg_exists : ∀ (k : Fin 2 → ℝ) (hk : k ∈ (K : Set (Fin 2 → ℝ))) (n : ℕ), ∃ (x : Fin 2 → ℝ), x ∈ Icc ![-1,-1] ![1,1] ∧ pₙ k hk n ∈ segment01 (x 0) (x 1) ∧ segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
+      intro k hk n
       rcases h_mem n with ⟨_, _, ⟨A, hA_sub, hA_eq⟩, _⟩
-      have hp_union : pₙ n ∈ ⋃ (p : Fin 2 → ℝ) (h : p ∈ A), segment01 (p 0) (p 1) := by
-        sorry
-        -- simp [hA_eq]
-      rcases mem_iUnion.1 hp_union with ⟨p, ⟨hpA, hp_seg⟩⟩
+      have : pₙ k hk n ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by sorry
+      rcases mem_iUnion.1 this with ⟨p, hpA, hp_seg⟩
       let x : Fin 2 → ℝ := ![p 0, p 1]
-      have hx : x ∈ Icc ![-1,-1] ![1,1] := by
-        sorry
-      have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
-        rintro y hy
-        have : y ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
-          sorry
-          -- simpa [x] using hy
-        -- simp [hA_eq] at this
-        -- exact this
-        sorry
+      have hx : x ∈ Icc ![-1, -1] ![1, 1] := by sorry -- simp_all [Fin.forall_fin_two, Pi.le_def]
+      have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := sorry
       sorry
+      -- exact ⟨x, hx, hp_seg, hsub⟩
 
     choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
-
-    obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
 
     set A : Set (Fin 2 → ℝ) := { p | p ∈ Icc ![-1,-1] ![1,1] ∧ segment01 (p 0) (p 1) ⊆ (K : Set (Fin 2 → ℝ)) } with hA
 
@@ -281,11 +267,23 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       rintro p ⟨hp_in, _⟩
       exact hp_in
 
-    have h_cover : K = ⋃ p ∈ A, segment01 (p 0) (p 1) := by
-      ext k'
-      simp only [SetLike.mem_coe, Fin.isValue, mem_iUnion, exists_prop]
-      constructor
-      · sorry
+    refine ⟨A, hA_sub, ?_⟩
+    ext k
+    constructor
+    · intro hk
+      -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq
+      sorry
+    · intro hk
+      sorry
+
+    -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq (fun n ↦ x k hk n) (fun n ↦ hx k hk n)
+
+    -- choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
+    -- have h_cover : K = ⋃ p ∈ A, segment01 (p 0) (p 1) := by
+    --   ext k
+    --   simp only [SetLike.mem_coe, Fin.isValue, mem_iUnion, exists_prop]
+    --   constructor
+    --   · sorry
         -- intro hk'
         -- set p_lim : Fin 2 → ℝ := ![x₁_lim, x₂_lim] with hp_lim
         -- have hp_lim_mem : p_lim ∈ Icc ![-1, -1] ![1, 1] := by
@@ -296,35 +294,76 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
         --   sorry
         -- have : p_lim ∈ A := ⟨hp_lim_mem, h_seg_lim_sub⟩
         -- exact ⟨p_lim, this, aux⟩
-      · rintro ⟨p, ⟨hp₁, hp₂⟩, hx_seg⟩
-        exact hp₂ hx_seg
-
-    exact ⟨A, hA_sub, h_cover⟩
+      -- · rintro ⟨p, ⟨hp₁, hp₂⟩, hx_seg⟩
+      --   exact hp₂ hx_seg
+    -- exact ⟨A, hA_sub, h_cover⟩
 
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂, x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ K := by
     intro v hv
-    have h_exists : ∀ n, ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, 1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ Pₙ n := by
-      sorry
+    have h_exists : ∀ n, ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, -1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ Pₙ n := by
+      intro n
+      rcases h_mem n with ⟨_, _, _, h_prop₂⟩
+      rcases h_prop₂ v hv with ⟨x₁, x₂, hx₁, hx₂, hdiffn, hsegPn⟩
+      set x : Fin 2 → ℝ := ![x₁, x₂] with h
+      have hx : x ∈ Icc ![-1, -1] ![1, 1] := by
+        simp_all [Fin.forall_fin_two, Pi.le_def]
+      have hdiff : (x 1) - (x 0) = v := by simp [x, hdiffn]
+      have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
+        intro y hy
+        convert hsegPn hy
+      exact ⟨x, hx, hdiff, hsub⟩
 
     choose! x hx hdiff h_segP using h_exists
 
     obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
 
     have hdiff_lim : (x_lim 1) - (x_lim 0) = v := by
-      sorry
-      --  simpa [hdiff] using (congr_arg₂ (· - ·) (hψ_lim : _ = _) (hφ_lim : _ = _))
+      have h1 : Tendsto (fun n ↦ (x (φ n)) 1) atTop (𝓝 (x_lim 1)) := by
+        sorry
+      have h0 : Tendsto (fun n ↦ (x (φ n)) 0) atTop (𝓝 (x_lim 0)) :=
+        sorry
+      have hsub_lim : Tendsto (fun n ↦ (x (φ n) 1) - (x (φ n) 0)) atTop (𝓝 ((x_lim 1) - (x_lim 0))) :=
+        sorry
+      have hconst : (fun n ↦ x (φ n) 1 - x (φ n) 0) = fun _ ↦ v := by funext n; simp [hdiff]
+      have hconst_lim : Tendsto (fun n ↦ x (φ n) 1 - x (φ n) 0) atTop (𝓝 v) := by
+        simpa using hconst ▸ tendsto_const_nhds
+      exact tendsto_nhds_unique hsub_lim hconst_lim
+
+    -- This is not the statement I want
+    -- have h_seg_lim : Tendsto (fun n ↦ segment01 (x (φ n) 0) (x (φ n) 1)) atTop (𝓝 (segment01 (x_lim 0) (x_lim 1))) := by sorry
+    -- rw [NormedAddCommGroup.tendsto_atTop'] at h_seg_lim
 
     have h_segK : segment01 (x_lim 0) (x_lim 1) ⊆ (K : Set _) := by
-      rintro y hy
+      intro y hy
       sorry
 
-    sorry
+    exact ⟨x_lim 0, x_lim 1, by simp_all [Fin.forall_fin_two, Pi.le_def], by simp_all [Fin.forall_fin_two, Pi.le_def], hdiff_lim, h_segK⟩
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
 
+--So I need to prove 2.4 which will be used to prove 2.5 which then implies 2.3
+
 -- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
 lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
+
+-- idk some nonsense
+
+/-- The projection onto the x–axis of a subset of ℝ². -/
+def proj_x (E : Set (Fin 2 → ℝ)) : Set ℝ :=
+  {x | ∃ (u : ℝ), ![x,u] ∈ E}
+
+/-- The projection of E ⊆ ℝ² onto the x–axis has Lebesgue measure zero. -/
+def proj_x_zero (E : Set (Fin 2 → ℝ)) : Prop :=
+  volume (proj_x E) = 0
+
+def something : Set P_collection' := {P | proj_x_zero P}
+
+theorem theorem_2_5 :
+    ¬ IsMeagre (something : Set P_collection') := by
+  sorry
+
+-- end of the nonsense
 
 /-- The family of those `P : P_collection'` which have Lebesgue measure zero. -/
 def zero_measure_sets : Set P_collection' := { P | volume (P : Set (Fin 2 → ℝ)) = 0 }
