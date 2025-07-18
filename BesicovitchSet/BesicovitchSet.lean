@@ -156,8 +156,32 @@ open Filter
 lemma prop_ii_equiv {P : Set (Fin 2 → ℝ)} :
     (∀ (v : ℝ), |v| ≤ (1/2 : ℝ) → ∃ x₁ x₂ : ℝ, x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P)
     ↔
-    (∀ (v : ℝ), |v| ≤ (1/2 : ℝ) → ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, 1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ P) := by
-  sorry
+    (∀ (v : ℝ), |v| ≤ (1/2 : ℝ) → ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, -1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ P) := by
+  refine ⟨fun h v hv ↦ ?_, fun h v hv ↦ ?_⟩
+  · rcases h v hv with ⟨x₁, x₂, hx₁, hx₂, hdiff, hP⟩
+    let x : Fin 2 → ℝ := ![x₁, x₂]
+    have : x ∈ Icc ![-1, -1] ![1, 1] := by simp_all [x, Pi.le_def, Fin.forall_fin_two]
+    exact ⟨x, this, hdiff, hP⟩
+  · rcases h v hv with ⟨x, ⟨hx₀, hx₁⟩, hdiff, hP⟩
+    exact ⟨x 0, x 1, by simp_all [Pi.le_def, Fin.forall_fin_two], by simp_all [Pi.le_def, Fin.forall_fin_two], hdiff, hP⟩
+
+  -- constructor
+  -- · intro h v hv
+  --   rcases h v hv with ⟨x₁, x₂, hx₁, hx₂, hdiff, hP⟩
+  --   let x : Fin 2 → ℝ := ![x₁, x₂]
+  --   have hx_mem : x ∈ Icc ![-1, -1] ![1, 1] := by simp_all [x, Pi.le_def, Fin.forall_fin_two]
+  --   use x
+  --   constructor; · exact hx_mem
+  --   constructor
+  --   · simp [x, hdiff]
+  --   · exact hP
+  -- · intro h v hv
+  --   rcases h v hv with ⟨x, ⟨hx0, hx1⟩, hdiff, hP⟩
+  --   use (x 0), (x 1)
+  --   constructor; · simp_all [Pi.le_def, Fin.forall_fin_two]
+  --   constructor; · simp_all [Pi.le_def, Fin.forall_fin_two]
+  --   constructor; · simpa
+  --   · exact hP
 
 theorem P_col'_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
@@ -251,12 +275,18 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     have h_seg_exists : ∀ (k : Fin 2 → ℝ) (hk : k ∈ (K : Set (Fin 2 → ℝ))) (n : ℕ), ∃ (x : Fin 2 → ℝ), x ∈ Icc ![-1,-1] ![1,1] ∧ pₙ k hk n ∈ segment01 (x 0) (x 1) ∧ segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
       intro k hk n
       rcases h_mem n with ⟨_, _, ⟨A, hA_sub, hA_eq⟩, _⟩
-      have : pₙ k hk n ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by sorry
+      have : pₙ k hk n ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
+        rw [←hA_eq]
+        exact hpₙ_mem k hk n
       rcases mem_iUnion.1 this with ⟨p, hpA, hp_seg⟩
       let x : Fin 2 → ℝ := ![p 0, p 1]
-      have hx : x ∈ Icc ![-1, -1] ![1, 1] := by sorry -- simp_all [Fin.forall_fin_two, Pi.le_def]
-      have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := sorry
+      have hx : x ∈ Icc ![-1, -1] ![1, 1] := by sorry -- simp_all [x, Fin.forall_fin_two, Pi.le_def]
+      have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
+        intro y hy
+        have : y ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by sorry
+        rwa [←hA_eq] at this
       sorry
+      -- exact ⟨x, hx, hp_mem_seg, hsub⟩
       -- exact ⟨x, hx, hp_seg, hsub⟩
 
     choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
@@ -273,8 +303,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     · intro hk
       -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq
       sorry
-    · intro hk
-      sorry
+    · sorry
 
     -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq (fun n ↦ x k hk n) (fun n ↦ hx k hk n)
 
@@ -337,6 +366,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       intro y hy
       sorry
 
+
     exact ⟨x_lim 0, x_lim 1, by simp_all [Fin.forall_fin_two, Pi.le_def], by simp_all [Fin.forall_fin_two, Pi.le_def], hdiff_lim, h_segK⟩
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
@@ -346,6 +376,58 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
 -- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
 lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
+
+noncomputable section
+
+/-- A closed, axis–aligned rectangle `[x₁,x₂] × [y₁,y₂]`
+    written in the `Fin 2 → ℝ` model of `ℝ²`. -/
+def axisRect (x₁ x₂ y₁ y₂ : ℝ) : Set (Fin 2 → ℝ) :=
+  {p | p 0 ∈ Icc x₁ x₂ ∧ p 1 ∈ Icc y₁ y₂}
+
+/-- Horizontal slice of a planar set at height `y`. -/
+def hSlice (S : Set (Fin 2 → ℝ)) (y : ℝ) : Set ℝ :=
+  {x | (![x, y] : Fin 2 → ℝ) ∈ S}
+
+/-- The vertical window `W v ε := [0,1] ∩ [v-ε,v+ε]`. -/
+def window (v ε : ℝ) : Set ℝ :=
+  Icc 0 1 ∩ Icc (v - ε) (v + ε)
+
+/-- The “good cover’’ condition appearing in Lemma 2.4. -/
+def hasThinCover (P : Set (Fin 2 → ℝ)) (v ε : ℝ) : Prop :=
+  ∃ (R : Finset (Set (Fin 2 → ℝ))),
+      -- every element of `R` is an axis–aligned rectangle
+      (∀ r ∈ R, ∃ a b c d, r = axisRect a b c d) ∧
+      -- each slice of `P` in the window is covered by `⋃ R`
+      (∀ y, y ∈ window v ε →
+        hSlice P y ⊆ hSlice (⋃ r ∈ R, (r : Set _)) y) ∧
+      -- and the total horizontal length is < 100 ε
+      (∀ y, y ∈ window v ε → (volume (hSlice (⋃ r ∈ R, (r : Set _)) y)).toReal < 100 * ε)
+
+/-- `𝒫(v, ε)` inside plain subsets of the big rectangle. -/
+def P_v_eps (v ε : ℝ) : Set (Set (Fin 2 → ℝ)) :=
+  {P | P ∈ P_collection ∧ hasThinCover P v ε}
+
+/-- The same collection, but as a subset of the Hausdorff–metric
+    space `NonemptyCompacts (Fin 2 → ℝ)`. -/
+def P_v_eps' (v ε : ℝ) : Set (NonemptyCompacts (Fin 2 → ℝ)) :=
+  {P | P ∈ P_collection' ∧ hasThinCover (P : Set _) v ε}
+
+lemma P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    IsOpen (P_v_eps' v ε) := by
+  sorry
+
+lemma complement {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    IsClosed (P_collection' \ P_v_eps' v ε) :=
+  by simpa [Set.diff_eq]
+    using P_col'_IsClosed.inter (isClosed_compl_iff.mpr <| P_v_eps_open hv₀ hv₁ hε)
+
+theorem complement_P_v_eps_nowhere_dense
+    {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    IsClosed (P_collection' \ P_v_eps' v ε) ∧ IsNowhereDense (P_collection' \ P_v_eps' v ε) := by
+  constructor; · exact complement hv₀ hv₁ hε
+  sorry
+
+end
 
 -- idk some nonsense
 
@@ -559,6 +641,33 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   rw [← hA]
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
+
+/-- Proposition 3.7 (slicing): if `A ⊆ ℝⁿ` has finite `s`-dimensional Hausdorff measure,
+    then for any `k ≤ s` and any `k`-plane `W`, the slices
+    `A ∩ (Wᗮ + x)` have finite `(s - k)`-measure for `μH[k]`-almost all `x ∈ W`. -/
+theorem prop_3_7_slicing
+  (n : ℕ)
+  (A : Set (EuclideanSpace ℝ (Fin n))) (hA : MeasurableSet A)
+  (s : ℝ) (hs : hausdorffMeasure s A < ⊤)
+  (k : ℕ) (hks : (k : ℝ) ≤ s)
+  (W : Submodule ℝ (EuclideanSpace ℝ (Fin n))) (hW : Module.finrank ℝ W = k)
+  (direction : W) (x : W) :
+  ∀ᵐ x ∂ (hausdorffMeasure (k : ℝ)).restrict (W : Set (EuclideanSpace ℝ (Fin n))),
+    hausdorffMeasure (s - k) (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
+  sorry
+
+section
+
+/--
+Besicovitch sets have Hausdorff dimension equal to 2.
+-/
+theorem hausdorff_dim_Besicovitch_eq_2 (B : Set (EuclideanSpace ℝ (Fin 2)))
+  (hB : IsBesicovitch B) :
+    dimH B = 2 := by
+  sorry
+
+end
+
 end
 
 end Besicovitch
@@ -586,3 +695,17 @@ theorem thing {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z 
     · apply dist_nonneg
     · rw [Real.norm_eq_abs, abs_of_nonneg hb]
       linarith
+
+
+open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory MetricSpace Filter
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MetricSpace (Set E)]
+
+theorem segment_tendsto_hausdorff {x₁ x₂ : E} (x₁ₙ x₂ₙ : ℕ → E)
+  (h₁ : Tendsto x₁ₙ atTop (𝓝 x₁)) (h₂ : Tendsto x₂ₙ atTop (𝓝 x₂)) :
+    Tendsto (fun n ↦ (segment ℝ (x₁ₙ n) (x₂ₙ n))) atTop (𝓝 (segment ℝ x₁ x₂)) := by
+  rw [@Metric.tendsto_atTop]
+  haveI : MetricSpace (Set E) := by sorry
+  intro ε hε
+  -- simp [Metric.NonemptyCompacts.dist_eq]
+  sorry
