@@ -709,3 +709,60 @@ theorem segment_tendsto_hausdorff {x₁ x₂ : E} (x₁ₙ x₂ₙ : ℕ → E)
   intro ε hε
   -- simp [Metric.NonemptyCompacts.dist_eq]
   sorry
+
+namespace Minkowski
+
+variable {α : Type*} [PseudoMetricSpace α]
+
+open scoped BigOperators
+
+/-- The set of all finite families of points whose closed r-balls cover `s`. -/
+def coveringCandidates (s : Set α) (r : ℝ) : Set (Finset α) :=
+  {t | s ⊆ ⋃ x ∈ t, Metric.closedBall x r}
+
+/-- Minimal number of closed `r`-balls to cover `s` (centres in `α`), or `∞` if no finite cover. -/
+noncomputable def coveringNumber (s : Set α) (r : ℝ) : WithTop ℕ :=
+  sInf { n : WithTop ℕ | ∃ t : Finset α, (t.card : WithTop ℕ) = n ∧ s ⊆ ⋃ x ∈ t, Metric.closedBall x r }
+
+lemma coveringNumber_mono_radius {s : Set α} {r₁ r₂ : ℝ}
+    (h₀ : 0 < r₁) (h : r₁ ≤ r₂) :
+      coveringNumber s r₂ ≤ coveringNumber s r₁ := by
+  -- larger radius ⇒ need no more balls
+  -- (prove by showing candidate sets transfer)
+  dsimp only [coveringNumber]
+  apply sInf_le_sInf_of_forall_exists_le
+  rintro n ⟨t, rfl, hcov⟩
+  have hcov₂ : s ⊆ ⋃ x ∈ t, closedBall x r₂ := by sorry
+  sorry
+
+lemma coveringNumber_empty (r : ℝ) : coveringNumber (∅ : Set α) r = 0 := by
+   dsimp [coveringNumber]
+   have h0 : (0 : WithTop ℕ) ∈ { n | ∃ t : Finset α, (t.card : WithTop ℕ) = n ∧ ∅ ⊆ ⋃ x ∈ t, closedBall x r } := ⟨∅, by simp, by simp⟩
+   sorry
+
+lemma coveringNumber_singleton {x : α} {r : ℝ} (hr : 0 < r) :
+    coveringNumber ({x} : Set α) r = 1 := by
+  sorry
+
+-- lemma coveringNumber_eq_coe_nat
+--   {s : Set α} {r : ℝ} (hfin : ∃ t, s ⊆ ⋃ x∈t, Metric.closedBall x r) :
+--     ∃ n : ℕ, coveringNumber s r = n := by
+--   sorry
+
+open ENNReal
+
+
+
+
+
+
+
+-- /-- Upper (box / Minkowski) dimension of a bounded (or totally bounded) set. -/
+-- noncomputable def upper (s : Set α) : ℝ≥0∞ := sorry
+
+-- /-- Lower Minkowski dimension of a set. -/
+-- noncomputable def lower (s : Set α) : ℝ≥0∞ := sorry
+
+-- /-- If upper = lower we speak of "the" Minkowski dimension. -/
+-- noncomputable def dim (s : Set α) : ℝ≥0∞ :=
+--   if h : upper s = lower s then upper s else 0  -- or leave undefined
