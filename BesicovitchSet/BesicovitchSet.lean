@@ -414,6 +414,10 @@ def P_v_eps' (v ε : ℝ) : Set (NonemptyCompacts (Fin 2 → ℝ)) :=
 
 lemma P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsOpen (P_v_eps' v ε) := by
+  rw [isOpen_iff_mem_nhds]
+  rintro P ⟨hPmem, hcover⟩
+  rcases hcover with ⟨R, hRrects, hRslice, hRvol⟩
+
   sorry
 
 lemma complement {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
@@ -696,7 +700,6 @@ theorem thing {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z 
     · rw [Real.norm_eq_abs, abs_of_nonneg hb]
       linarith
 
-
 open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory MetricSpace Filter
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MetricSpace (Set E)]
@@ -718,11 +721,11 @@ open scoped BigOperators
 
 /-- The set of all finite families of points whose closed r-balls cover `s`. -/
 def coveringCandidates (s : Set α) (r : ℝ) : Set (Finset α) :=
-  {t | s ⊆ ⋃ x ∈ t, Metric.closedBall x r}
+  {t | s ⊆ ⋃ x ∈ t, Metric.ball x r}
 
 /-- Minimal number of closed `r`-balls to cover `s` (centres in `α`), or `∞` if no finite cover. -/
 noncomputable def coveringNumber (s : Set α) (r : ℝ) : WithTop ℕ :=
-  sInf { n : WithTop ℕ | ∃ t : Finset α, (t.card : WithTop ℕ) = n ∧ s ⊆ ⋃ x ∈ t, Metric.closedBall x r }
+  sInf { n : WithTop ℕ | ∃ t : Finset α, (t.card : WithTop ℕ) = n ∧ s ⊆ ⋃ x ∈ t, Metric.ball x r }
 
 lemma coveringNumber_mono_radius {s : Set α} {r₁ r₂ : ℝ}
     (h₀ : 0 < r₁) (h : r₁ ≤ r₂) :
@@ -732,7 +735,11 @@ lemma coveringNumber_mono_radius {s : Set α} {r₁ r₂ : ℝ}
   dsimp only [coveringNumber]
   apply sInf_le_sInf_of_forall_exists_le
   rintro n ⟨t, rfl, hcov⟩
-  have hcov₂ : s ⊆ ⋃ x ∈ t, closedBall x r₂ := by sorry
+  have hcov₂ : s ⊆ ⋃ x ∈ t, closedBall x r₂ := by
+    simp only [subset_def, mem_iUnion, mem_ball, exists_prop] at hcov
+    intro a ha
+    rcases hcov a ha with ⟨x, hx, hdist⟩
+    sorry
   sorry
 
 lemma coveringNumber_empty (r : ℝ) : coveringNumber (∅ : Set α) r = 0 := by
@@ -749,12 +756,19 @@ lemma coveringNumber_singleton {x : α} {r : ℝ} (hr : 0 < r) :
 --     ∃ n : ℕ, coveringNumber s r = n := by
 --   sorry
 
-open ENNReal
+open ENNReal Filter
 
+noncomputable def N (s : Set α) (r : ℝ) : ℝ≥0∞ :=
+  (coveringNumber s r).map (fun (n : ℕ) => (n : ℝ).toNNReal)
 
+noncomputable def ballRatio (s : Set α) (r : ℝ) : ℝ :=
+  if r > 0 then
+    if N s r = 0 then 0
+    else Real.log ((N s r).toReal) / (- Real.log r)
+  else 0
 
-
-
+-- noncomputable def upper_minkowski_dim (s : Set α) : ℝ :=
+--   limsup (𝓝[>] (0 : ℝ)) (fun r => if r > 0 then log ((N s r).toReal) / (- log r) else 0)
 
 
 -- /-- Upper (box / Minkowski) dimension of a bounded (or totally bounded) set. -/
