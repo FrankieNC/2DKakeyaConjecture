@@ -303,13 +303,21 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       rintro p ⟨hp_in, _⟩
       exact hp_in
 
-    refine ⟨A, hA_sub, ?_⟩
+    refine ⟨A, hA_sub, by
     ext k
     constructor
     · intro hk
-      -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq
+      specialize hx k hk
+      obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
+      have hpA : x_lim ∈ A := by
+        dsimp [A]
+        constructor
+        · exact hx_lim_mem
+        · sorry
+      have hk_seg : k ∈ segment01 (x_lim 0) (x_lim 1) := by sorry
       sorry
-    · sorry
+    · rintro ⟨p, ⟨_, hp_mem⟩, hk⟩
+      sorry⟩
 
     -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq (fun n ↦ x k hk n) (fun n ↦ hx k hk n)
 
@@ -368,7 +376,6 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     -- have h_seg_lim : Tendsto (fun n ↦ segment01 (x (φ n) 0) (x (φ n) 1)) atTop (𝓝 (segment01 (x_lim 0) (x_lim 1))) := by sorry
     -- rw [NormedAddCommGroup.tendsto_atTop'] at h_seg_lim
 
-
     have h_segK : segment01 (x_lim 0) (x_lim 1) ⊆ (K : Set _) := by
       intro y hy
       sorry
@@ -383,7 +390,13 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 -- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
 lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
 
+lemma P_col'_BaireSpace : BaireSpace P_collection' := by
+  have := P_col'_CompleteSpace
+  apply BaireSpace.of_pseudoEMetricSpace_completeSpace
+
 noncomputable section
+
+variable [hP_complete : CompleteSpace P_collection'] [hP_Baire : BaireSpace P_collection']
 
 /-- A closed, axis–aligned rectangle `[x₁,x₂] × [y₁,y₂]`
     written in the `Fin 2 → ℝ` model of `ℝ²`. -/
@@ -440,10 +453,14 @@ theorem image_coe_P_v_eps' (v ε : ℝ) :
   --   have hthin' : hasThinCover (Q : Set _) v ε := by simpa using hthin
   --   exact ⟨Q, ⟨hQ, hthin'⟩, rfl⟩
 
--- Hmm I think from here on out, it is showing that 𝒫(v,ε) is open in the 𝒦 and not in 𝒫
+theorem P_v_eps'_nonempty {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    (P_v_eps' v ε).Nonempty := by
+  sorry
+
 theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsOpen (P_v_eps' v ε) := by
   rw [Metric.isOpen_iff]
+  intro x hx
   sorry
 
 -- theorem complement_closed {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
@@ -451,21 +468,53 @@ theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 <
 --   by simpa [Set.diff_eq]
 --     using P_col'_IsClosed.inter (isClosed_compl_iff.mpr <| P_v_eps_open hv₀ hv₁ hε)
 
--- which means this has to be rephrased
+/--
+In a Baire space, every nonempty open set is non‐meagre,
+i.e. it cannot be written as a countable union of nowhere‐dense sets.
+-/
+theorem BaireSpace.not_meagre_of_open {α : Type*} [TopologicalSpace α] [BaireSpace α]
+  {X : Set α} (hX : IsOpen X) (hne : X.Nonempty) :
+    ¬ IsMeagre X := by
+  intro hm
+  rw [IsMeagre] at hm
+  sorry
+
 theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
-    Dense (P_v_eps' v ε) := by sorry
+    Dense (P_v_eps' v ε) := by
+  sorry
 
-
-theorem lemma2_4
-    {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+theorem lemma2_4 {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsClosed (P_v_eps' v ε)ᶜ ∧ IsNowhereDense (P_v_eps' v ε)ᶜ := by
   rw [isClosed_isNowhereDense_iff_compl]
   simp only [compl_compl]
   exact ⟨P_v_eps_open hv₀ hv₁ hε, P_v_eps_dense hv₀ hv₁ hε⟩
 
--- def E_collection (u : ℝ) : Set P_collection' := {E | volume (hSlice (E.1 : Set _) u).toReal = 0}
+theorem P_v_eps'_not_meagre {v ε : ℝ} (h0 : 0 ≤ v) (h1 : v ≤ 1) (hε : 0 < ε) :
+    ¬ IsMeagre (P_v_eps' v ε) := by
+  exact BaireSpace.not_meagre_of_open (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
 
--- theorem thm2_5 : ¬IsMeagre E_collection := by sorry
+def Pn (n : ℕ): Set P_collection' := ⋂ r ∈ Finset.range (n + 1), P_v_eps' (r / n) ((1 : ℕ) / n)
+
+def Pstar : Set P_collection' := ⋂ n, Pn n
+
+lemma something1 (n : ℕ) : ¬ IsMeagre (Pn n) := by
+  sorry
+
+lemma something2 : ¬ IsMeagre (Pstar) := by sorry
+
+def E_collection (u : ℝ) : Set P_collection' := {E | volume (hSlice (E : Set _) u) = 0}
+
+theorem thm2_5 (u : ℝ) : ¬IsMeagre (E_collection u) := by
+  sorry
+
+--hmm
+def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
+
+theorem thm2_3 : ¬IsMeagre P_zero_vol := by sorry
+
+theorem Exists_P0 : P_zero_vol.Nonempty := by sorry
+
+theorem exists_besicovitch_set : ∃ (B : Set (Fin 2 → ℝ)), IsBesicovitch B := by sorry
 
 end
 
