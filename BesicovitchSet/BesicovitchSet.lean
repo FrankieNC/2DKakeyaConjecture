@@ -280,14 +280,20 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
         exact hpₙ_mem k hk n
       rcases mem_iUnion.1 this with ⟨p, hpA, hp_seg⟩
       let x : Fin 2 → ℝ := ![p 0, p 1]
-      have hx : x ∈ Icc ![-1, -1] ![1, 1] := by sorry -- simp_all [x, Fin.forall_fin_two, Pi.le_def]
+      have hx : x ∈ Icc ![-1, -1] ![1, 1] := by
+        simp_all only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, x, Fin.forall_fin_two, Pi.le_def]
+        rcases hp_seg with ⟨⟨aux ,_⟩, _⟩
+        have : p ∈ Icc ![-1, -1] ![1, 1] := by exact hA_sub aux
+        simp_all [Fin.forall_fin_two, Pi.le_def]
       have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
         intro y hy
-        have : y ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by sorry
+        have y_in_seg : y ∈ segment01 (p 0) (p 1) := by simpa [x] using hy
+        have : y ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
+          apply mem_iUnion.2
+          -- exact ⟨p, hpA, y_in_seg⟩
+          sorry
         rwa [←hA_eq] at this
-      sorry
-      -- exact ⟨x, hx, hp_mem_seg, hsub⟩
-      -- exact ⟨x, hx, hp_seg, hsub⟩
+      exact ⟨x, hx, by sorry, hsub⟩
 
     choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
 
@@ -349,10 +355,10 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     have hdiff_lim : (x_lim 1) - (x_lim 0) = v := by
       have h1 : Tendsto (fun n ↦ (x (φ n)) 1) atTop (𝓝 (x_lim 1)) := by
         sorry
-      have h0 : Tendsto (fun n ↦ (x (φ n)) 0) atTop (𝓝 (x_lim 0)) :=
+      have h0 : Tendsto (fun n ↦ (x (φ n)) 0) atTop (𝓝 (x_lim 0)) := by
         sorry
-      have hsub_lim : Tendsto (fun n ↦ (x (φ n) 1) - (x (φ n) 0)) atTop (𝓝 ((x_lim 1) - (x_lim 0))) :=
-        sorry
+      have hsub_lim : Tendsto (fun n ↦ (x (φ n) 1) - (x (φ n) 0)) atTop (𝓝 ((x_lim 1) - (x_lim 0))) := by
+        exact h1.sub h0
       have hconst : (fun n ↦ x (φ n) 1 - x (φ n) 0) = fun _ ↦ v := by funext n; simp [hdiff]
       have hconst_lim : Tendsto (fun n ↦ x (φ n) 1 - x (φ n) 0) atTop (𝓝 v) := by
         simpa using hconst ▸ tendsto_const_nhds
@@ -362,6 +368,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     -- have h_seg_lim : Tendsto (fun n ↦ segment01 (x (φ n) 0) (x (φ n) 1)) atTop (𝓝 (segment01 (x_lim 0) (x_lim 1))) := by sorry
     -- rw [NormedAddCommGroup.tendsto_atTop'] at h_seg_lim
 
+
     have h_segK : segment01 (x_lim 0) (x_lim 1) ⊆ (K : Set _) := by
       intro y hy
       sorry
@@ -370,7 +377,6 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     exact ⟨x_lim 0, x_lim 1, by simp_all [Fin.forall_fin_two, Pi.le_def], by simp_all [Fin.forall_fin_two, Pi.le_def], hdiff_lim, h_segK⟩
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
-
 
 --So I need to prove 2.4 which will be used to prove 2.5 which then implies 2.3
 
@@ -401,6 +407,8 @@ def hasThinCover (P : Set (Fin 2 → ℝ)) (v ε : ℝ) : Prop :=
       (∀ y, y ∈ window v ε →
         hSlice P y ⊆ hSlice (⋃ r ∈ R, (r : Set _)) y) ∧
       -- and the total horizontal length is < 100 ε
+
+      -- I don't think volume here is correct
       (∀ y, y ∈ window v ε → (volume (hSlice (⋃ r ∈ R, (r : Set _)) y)).toReal < 100 * ε)
 
 /-- `𝒫(v, ε)` inside plain subsets of the big rectangle. -/
@@ -412,24 +420,42 @@ def P_v_eps (v ε : ℝ) : Set (Set (Fin 2 → ℝ)) :=
 def P_v_eps' (v ε : ℝ) : Set (NonemptyCompacts (Fin 2 → ℝ)) :=
   {P | P ∈ P_collection' ∧ hasThinCover (P : Set _) v ε}
 
-lemma P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
-    IsOpen (P_v_eps' v ε) := by
-  rw [isOpen_iff_mem_nhds]
-  rintro P ⟨hPmem, hcover⟩
-  rcases hcover with ⟨R, hRrects, hRslice, hRvol⟩
+theorem image_coe_P_v_eps' (v ε : ℝ):
+    (↑) '' P_v_eps' v ε = P_v_eps v ε := by
+  ext P
+  constructor
+  · rintro ⟨Q, hQ, rfl⟩
+    exact hQ
+  · rintro ⟨hPcol, hthin⟩
+    have h : P ∈ (↑) '' P_collection' := by rwa [← P_collection'_image_eq] at hPcol
+    rcases h with ⟨Q, hQ, rfl⟩
+    have hthin' : hasThinCover (Q : Set _) v ε := by simpa using hthin
+    exact ⟨Q, ⟨hQ, hthin'⟩, rfl⟩
 
+-- Hmm I think from here on out, it is showing that 𝒫(v,ε) is open in the 𝒦 and not in 𝒫
+theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    IsOpen (P_v_eps' v ε) := by
+  rw [Metric.isOpen_iff]
+  rintro P ⟨hPcol, ⟨R, hRrects, hcover, hlen⟩⟩
   sorry
 
-lemma complement {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
-    IsClosed (P_collection' \ P_v_eps' v ε) :=
-  by simpa [Set.diff_eq]
-    using P_col'_IsClosed.inter (isClosed_compl_iff.mpr <| P_v_eps_open hv₀ hv₁ hε)
+-- theorem complement_closed {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+--     IsClosed (P_collection' \ P_v_eps' v ε) :=
+--   by simpa [Set.diff_eq]
+--     using P_col'_IsClosed.inter (isClosed_compl_iff.mpr <| P_v_eps_open hv₀ hv₁ hε)
 
-theorem complement_P_v_eps_nowhere_dense
+-- which means this has to be rephrased
+theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    Dense (P_v_eps' v ε) := by sorry
+
+--and this is not the statement we want
+theorem lemma2_4
     {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsClosed (P_collection' \ P_v_eps' v ε) ∧ IsNowhereDense (P_collection' \ P_v_eps' v ε) := by
-  constructor; · exact complement hv₀ hv₁ hε
+  rw [isClosed_isNowhereDense_iff_compl]
+  -- need to use `simp`
   sorry
+  -- constructor; · exact complement_closed hv₀ hv₁ hε
 
 end
 
@@ -721,11 +747,11 @@ open scoped BigOperators
 
 /-- The set of all finite families of points whose closed r-balls cover `s`. -/
 def coveringCandidates (s : Set α) (r : ℝ) : Set (Finset α) :=
-  {t | s ⊆ ⋃ x ∈ t, Metric.ball x r}
+  {t | s ⊆ ⋃ x ∈ t, Metric.closedBall x r}
 
 /-- Minimal number of closed `r`-balls to cover `s` (centres in `α`), or `∞` if no finite cover. -/
 noncomputable def coveringNumber (s : Set α) (r : ℝ) : WithTop ℕ :=
-  sInf { n : WithTop ℕ | ∃ t : Finset α, (t.card : WithTop ℕ) = n ∧ s ⊆ ⋃ x ∈ t, Metric.ball x r }
+  sInf { n : WithTop ℕ | ∃ t : Finset α, (t.card : WithTop ℕ) = n ∧ s ⊆ ⋃ x ∈ t, Metric.closedBall x r }
 
 lemma coveringNumber_mono_radius {s : Set α} {r₁ r₂ : ℝ}
     (h₀ : 0 < r₁) (h : r₁ ≤ r₂) :
@@ -736,7 +762,7 @@ lemma coveringNumber_mono_radius {s : Set α} {r₁ r₂ : ℝ}
   apply sInf_le_sInf_of_forall_exists_le
   rintro n ⟨t, rfl, hcov⟩
   have hcov₂ : s ⊆ ⋃ x ∈ t, closedBall x r₂ := by
-    simp only [subset_def, mem_iUnion, mem_ball, exists_prop] at hcov
+    simp only [subset_def, mem_iUnion, exists_prop] at hcov
     intro a ha
     rcases hcov a ha with ⟨x, hx, hdist⟩
     sorry
@@ -761,18 +787,21 @@ open ENNReal Filter
 noncomputable def N (s : Set α) (r : ℝ) : ℝ≥0∞ :=
   (coveringNumber s r).map (fun (n : ℕ) => (n : ℝ).toNNReal)
 
-noncomputable def ballRatio (s : Set α) (r : ℝ) : ℝ :=
-  if r > 0 then
-    if N s r = 0 then 0
-    else Real.log ((N s r).toReal) / (- Real.log r)
-  else 0
+
+-- noncomputable def ballRatio (s : Set α) (r : ℝ) : ℝ≥0∞ :=
+--   if r > 0 then
+--     if N s r = 0 then 0
+--     else ENNReal.log ((N s r)) / (- ENNReal.log r)
+--   else 0
+
+-- noncomputable def upperBoxDim (s : Set α) : ℝ≥0∞ :=
+  -- limsup (fun r => ballRatio s r) (𝓝[>] (0 : ℝ))
 
 -- noncomputable def upper_minkowski_dim (s : Set α) : ℝ :=
 --   limsup (𝓝[>] (0 : ℝ)) (fun r => if r > 0 then log ((N s r).toReal) / (- log r) else 0)
 
-
 -- /-- Upper (box / Minkowski) dimension of a bounded (or totally bounded) set. -/
--- noncomputable def upper (s : Set α) : ℝ≥0∞ := sorry
+-- noncomputable def upper (s : Set α) : ℝ≥0∞ :=
 
 -- /-- Lower Minkowski dimension of a set. -/
 -- noncomputable def lower (s : Set α) : ℝ≥0∞ := sorry
