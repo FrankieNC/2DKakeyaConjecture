@@ -411,32 +411,39 @@ def hasThinCover (P : Set (Fin 2 → ℝ)) (v ε : ℝ) : Prop :=
       -- I don't think volume here is correct
       (∀ y, y ∈ window v ε → (volume (hSlice (⋃ r ∈ R, (r : Set _)) y)).toReal < 100 * ε)
 
+instance : MetricSpace P_collection' := inferInstance   -- inherits the Hausdorff metric `d`
+
 /-- `𝒫(v, ε)` inside plain subsets of the big rectangle. -/
-def P_v_eps (v ε : ℝ) : Set (Set (Fin 2 → ℝ)) :=
-  {P | P ∈ P_collection ∧ hasThinCover P v ε}
+def P_v_eps (v ε : ℝ) : Set P_collection :=
+  {P | hasThinCover P v ε}
 
 /-- The same collection, but as a subset of the Hausdorff–metric
     space `NonemptyCompacts (Fin 2 → ℝ)`. -/
-def P_v_eps' (v ε : ℝ) : Set (NonemptyCompacts (Fin 2 → ℝ)) :=
-  {P | P ∈ P_collection' ∧ hasThinCover (P : Set _) v ε}
+def P_v_eps' (v ε : ℝ) : Set P_collection' :=
+  {P | hasThinCover (P : Set _) v ε}
 
-theorem image_coe_P_v_eps' (v ε : ℝ):
-    (↑) '' P_v_eps' v ε = P_v_eps v ε := by
+-- Hmm
+theorem image_coe_P_v_eps' (v ε : ℝ) :
+    ((↑) : P_collection' → Set (Fin 2 → ℝ)) '' P_v_eps' v ε = P_v_eps v ε := by
   ext P
-  constructor
-  · rintro ⟨Q, hQ, rfl⟩
-    exact hQ
-  · rintro ⟨hPcol, hthin⟩
-    have h : P ∈ (↑) '' P_collection' := by rwa [← P_collection'_image_eq] at hPcol
-    rcases h with ⟨Q, hQ, rfl⟩
-    have hthin' : hasThinCover (Q : Set _) v ε := by simpa using hthin
-    exact ⟨Q, ⟨hQ, hthin'⟩, rfl⟩
+  sorry
+
+-- theorem image_coe_P_v_eps' (v ε : ℝ):
+--     (↑) '' P_v_eps' v ε = P_v_eps v ε := by
+  -- ext P
+  -- constructor
+  -- · rintro ⟨Q, hQ, rfl⟩
+  --   exact hQ
+  -- · rintro ⟨hPcol, hthin⟩
+  --   have h : P ∈ (↑) '' P_collection' := by rwa [← P_collection'_image_eq] at hPcol
+  --   rcases h with ⟨Q, hQ, rfl⟩
+  --   have hthin' : hasThinCover (Q : Set _) v ε := by simpa using hthin
+  --   exact ⟨Q, ⟨hQ, hthin'⟩, rfl⟩
 
 -- Hmm I think from here on out, it is showing that 𝒫(v,ε) is open in the 𝒦 and not in 𝒫
 theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsOpen (P_v_eps' v ε) := by
   rw [Metric.isOpen_iff]
-  rintro P ⟨hPcol, ⟨R, hRrects, hcover, hlen⟩⟩
   sorry
 
 -- theorem complement_closed {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
@@ -448,53 +455,20 @@ theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 <
 theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     Dense (P_v_eps' v ε) := by sorry
 
---and this is not the statement we want
+
 theorem lemma2_4
     {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
-    IsClosed (P_collection' \ P_v_eps' v ε) ∧ IsNowhereDense (P_collection' \ P_v_eps' v ε) := by
+    IsClosed (P_v_eps' v ε)ᶜ ∧ IsNowhereDense (P_v_eps' v ε)ᶜ := by
   rw [isClosed_isNowhereDense_iff_compl]
-  -- need to use `simp`
-  sorry
-  -- constructor; · exact complement_closed hv₀ hv₁ hε
+  simp only [compl_compl]
+  exact ⟨P_v_eps_open hv₀ hv₁ hε, P_v_eps_dense hv₀ hv₁ hε⟩
+
+-- def E_collection (u : ℝ) : Set P_collection' := {E | volume (hSlice (E.1 : Set _) u).toReal = 0}
+
+-- theorem thm2_5 : ¬IsMeagre E_collection := by sorry
 
 end
 
--- idk some nonsense
-
-/-- The projection onto the x–axis of a subset of ℝ². -/
-def proj_x (E : Set (Fin 2 → ℝ)) : Set ℝ :=
-  {x | ∃ (u : ℝ), ![x,u] ∈ E}
-
-/-- The projection of E ⊆ ℝ² onto the x–axis has Lebesgue measure zero. -/
-def proj_x_zero (E : Set (Fin 2 → ℝ)) : Prop :=
-  volume (proj_x E) = 0
-
-def something : Set P_collection' := {P | proj_x_zero P}
-
-theorem theorem_2_5 :
-    ¬ IsMeagre (something : Set P_collection') := by
-  sorry
-
--- end of the nonsense
-
-/-- The family of those `P : P_collection'` which have Lebesgue measure zero. -/
-def zero_measure_sets : Set P_collection' := { P | volume (P : Set (Fin 2 → ℝ)) = 0 }
-
-/-- Theorem 2.3.  The set of `P ∈ P_collection'` of Lebesgue measure zero is of second
-    category (i.e. non-meager) in the complete metric space `P_collection'`. -/
-theorem zero_measure_sets_second_category :
-    ¬ IsMeagre (zero_measure_sets : Set P_collection') := by
-  sorry
-
-theorem exists_zero_measure_set : Nonempty zero_measure_sets := by
-  rw [zero_measure_sets]
-  sorry
-
-theorem exists_besicovitch_set :
-    ∃ B : Set (Fin 2 → ℝ), IsBesicovitch B := by
-  obtain ⟨B, hB⟩ := exists_zero_measure_set
-  use B
-  sorry
 
 end
 
