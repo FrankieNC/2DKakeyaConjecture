@@ -278,22 +278,23 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       have : pₙ k hk n ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
         rw [←hA_eq]
         exact hpₙ_mem k hk n
-      rcases mem_iUnion.1 this with ⟨p, hpA, hp_seg⟩
+      rcases mem_iUnion₂.1 this with ⟨p, hpA, hp_seg⟩
       let x : Fin 2 → ℝ := ![p 0, p 1]
       have hx : x ∈ Icc ![-1, -1] ![1, 1] := by
-        simp_all only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, x, Fin.forall_fin_two, Pi.le_def]
-        rcases hp_seg with ⟨⟨aux ,_⟩, _⟩
-        have : p ∈ Icc ![-1, -1] ![1, 1] := by exact hA_sub aux
-        simp_all [Fin.forall_fin_two, Pi.le_def]
+        simpa [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, Pi.le_def, Fin.forall_fin_two,
+  Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one, x] using hA_sub hpA
+        -- simp_all only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, x, Fin.forall_fin_two, Pi.le_def]
+        -- have : p ∈ Icc ![-1, -1] ![1, 1] := hA_sub hpA
+        -- simp_all [Fin.forall_fin_two, Pi.le_def]
       have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
         intro y hy
-        have y_in_seg : y ∈ segment01 (p 0) (p 1) := by simpa [x] using hy
+        simp only [Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+          x] at hy
         have : y ∈ ⋃ p ∈ A, segment01 (p 0) (p 1) := by
-          apply mem_iUnion.2
-          -- exact ⟨p, hpA, y_in_seg⟩
-          sorry
+          apply mem_iUnion₂.2
+          use p
         rwa [←hA_eq] at this
-      exact ⟨x, hx, by sorry, hsub⟩
+      exact ⟨x, hx, hp_seg, hsub⟩
 
     choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
 
@@ -390,13 +391,11 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 -- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
 lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
 
-lemma P_col'_BaireSpace : BaireSpace P_collection' := by
-  have := P_col'_CompleteSpace
-  apply BaireSpace.of_pseudoEMetricSpace_completeSpace
+lemma P_col'_BaireSpace [CompleteSpace P_collection'] : BaireSpace P_collection' := BaireSpace.of_pseudoEMetricSpace_completeSpace
 
 noncomputable section
 
-variable [hP_complete : CompleteSpace P_collection'] [hP_Baire : BaireSpace P_collection']
+variable [CompleteSpace P_collection'] [BaireSpace P_collection']
 
 /-- A closed, axis–aligned rectangle `[x₁,x₂] × [y₁,y₂]`
     written in the `Fin 2 → ℝ` model of `ℝ²`. -/
@@ -421,7 +420,7 @@ def hasThinCover (P : Set (Fin 2 → ℝ)) (v ε : ℝ) : Prop :=
         hSlice P y ⊆ hSlice (⋃ r ∈ R, (r : Set _)) y) ∧
       -- and the total horizontal length is < 100 ε
 
-      -- I don't think volume here is correct
+      -- Hmm
       (∀ y, y ∈ window v ε → (volume (hSlice (⋃ r ∈ R, (r : Set _)) y)).toReal < 100 * ε)
 
 instance : MetricSpace P_collection' := inferInstance   -- inherits the Hausdorff metric `d`
@@ -455,29 +454,30 @@ theorem image_coe_P_v_eps' (v ε : ℝ) :
 
 theorem P_v_eps'_nonempty {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     (P_v_eps' v ε).Nonempty := by
+  let p : Fin 2 → ℝ := ![0, 0]
+  have h_comp : IsCompact ({p} : Set (Fin 2 → ℝ)) := isCompact_singleton
+  have h_nonempty : ({p} : Set (Fin 2 → ℝ)).Nonempty := by simp
   sorry
 
 theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsOpen (P_v_eps' v ε) := by
   rw [Metric.isOpen_iff]
-  intro x hx
+  intro P hP
+  rcases hP with ⟨R, h_rects, h_cover, h_le⟩
+  dsimp only [ball]
   sorry
-
--- theorem complement_closed {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
---     IsClosed (P_collection' \ P_v_eps' v ε) :=
---   by simpa [Set.diff_eq]
---     using P_col'_IsClosed.inter (isClosed_compl_iff.mpr <| P_v_eps_open hv₀ hv₁ hε)
 
 /--
 In a Baire space, every nonempty open set is non‐meagre,
-i.e. it cannot be written as a countable union of nowhere‐dense sets.
+that is, it cannot be written as a countable union of nowhere‐dense sets.
 -/
-theorem BaireSpace.not_meagre_of_open {α : Type*} [TopologicalSpace α] [BaireSpace α]
-  {X : Set α} (hX : IsOpen X) (hne : X.Nonempty) :
-    ¬ IsMeagre X := by
-  intro hm
-  rw [IsMeagre] at hm
-  sorry
+theorem nonempty_open_nonmeagre {X : Type*} {s : Set X}
+  [TopologicalSpace X] [BaireSpace X]
+  (hs : IsOpen s) (hne : s.Nonempty) :
+    ¬ IsMeagre s := fun h ↦ by
+  rcases (dense_of_mem_residual (by rwa [IsMeagre] at h)).inter_open_nonempty s hs hne
+    with ⟨x, hx, hxc⟩
+  exact hxc hx
 
 theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     Dense (P_v_eps' v ε) := by
@@ -491,30 +491,62 @@ theorem lemma2_4 {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε)
 
 theorem P_v_eps'_not_meagre {v ε : ℝ} (h0 : 0 ≤ v) (h1 : v ≤ 1) (hε : 0 < ε) :
     ¬ IsMeagre (P_v_eps' v ε) := by
-  exact BaireSpace.not_meagre_of_open (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
+  exact nonempty_open_nonmeagre (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
 
 def Pn (n : ℕ): Set P_collection' := ⋂ r ∈ Finset.range (n + 1), P_v_eps' (r / n) ((1 : ℕ) / n)
 
 def Pstar : Set P_collection' := ⋂ n, Pn n
 
-lemma something1 (n : ℕ) : ¬ IsMeagre (Pn n) := by
-  sorry
+lemma something0 (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : ¬ IsMeagre (P_v_eps' (r / n) ((1 : ℕ) / n)) :=  by
+  apply nonempty_open_nonmeagre
+  · apply P_v_eps_open
+    · positivity
+    · rw [div_le_iff₀]
+      simp only [one_mul, Nat.cast_le]
+      · exact hrn
+      · exact Nat.cast_pos'.mpr hn
+    · positivity
+  · apply P_v_eps'_nonempty
+    · positivity
+    · rw [div_le_iff₀]
+      simp only [one_mul, Nat.cast_le]
+      · exact hrn
+      · exact Nat.cast_pos'.mpr hn
+    · positivity
 
-lemma something2 : ¬ IsMeagre (Pstar) := by sorry
+-- Easy, the finite intersection of open sets is open, then apply lemma from above
+lemma something1 (n : ℕ) : ¬ IsMeagre (Pn n) := by
+  have : IsOpen (Pn n) := by
+    rw [Pn]
+    sorry
+  apply nonempty_open_nonmeagre
+  · exact this
+  · sorry
+
+-- the tough part, we need lemma 2.4 here. the fact that the collection is dense
+lemma something2 : ¬ IsMeagre (Pstar) := by
+  by_contra! h
+  sorry
 
 def E_collection (u : ℝ) : Set P_collection' := {E | volume (hSlice (E : Set _) u) = 0}
 
 theorem thm2_5 (u : ℝ) : ¬IsMeagre (E_collection u) := by
   sorry
 
+/-- A set of second category (i.e. non-meagre) is nonempty. -/
+lemma nonempty_of_not_IsMeagre {X : Type*} [TopologicalSpace X] {s : Set X} (hs : ¬IsMeagre s) : s.Nonempty := by
+  contrapose! hs
+  simpa [hs] using (meagre_empty)
+
 --hmm
 def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
 
 theorem thm2_3 : ¬IsMeagre P_zero_vol := by sorry
 
-theorem Exists_P0 : P_zero_vol.Nonempty := by sorry
+theorem Exists_P0 : P_zero_vol.Nonempty := by exact nonempty_of_not_IsMeagre thm2_3
 
-theorem exists_besicovitch_set : ∃ (B : Set (Fin 2 → ℝ)), IsBesicovitch B := by sorry
+theorem exists_besicovitch_set : ∃ (B : Set (Fin 2 → ℝ)), IsBesicovitch B := by
+  sorry
 
 end
 
@@ -701,12 +733,12 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
 theorem prop_3_7_slicing
   (n : ℕ)
   (A : Set (EuclideanSpace ℝ (Fin n))) (hA : MeasurableSet A)
-  (s : ℝ) (hs : hausdorffMeasure s A < ⊤)
+  (s : ℝ) (hs : μH[s] A < ⊤)
   (k : ℕ) (hks : (k : ℝ) ≤ s)
   (W : Submodule ℝ (EuclideanSpace ℝ (Fin n))) (hW : Module.finrank ℝ W = k)
   (direction : W) (x : W) :
-  ∀ᵐ x ∂ (hausdorffMeasure (k : ℝ)).restrict (W : Set (EuclideanSpace ℝ (Fin n))),
-    hausdorffMeasure (s - k) (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
+  ∀ᵐ x ∂ (μH[(k : ℝ)]).restrict (W : Set (EuclideanSpace ℝ (Fin n))),
+    μH[s - k] (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
   sorry
 
 section
@@ -714,8 +746,7 @@ section
 /--
 Besicovitch sets have Hausdorff dimension equal to 2.
 -/
-theorem hausdorff_dim_Besicovitch_eq_2 (B : Set (EuclideanSpace ℝ (Fin 2)))
-  (hB : IsBesicovitch B) :
+theorem hausdorff_dim_Besicovitch_eq_2 (B : Set (EuclideanSpace ℝ (Fin 2))) (hB : IsBesicovitch B) :
     dimH B = 2 := by
   sorry
 
