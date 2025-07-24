@@ -183,6 +183,10 @@ lemma prop_ii_equiv {P : Set (Fin 2 → ℝ)} :
   --   constructor; · simpa
   --   · exact hP
 
+theorem THE_THING {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z : E} :
+    hausdorffDist (segment ℝ x z) (segment ℝ y z) ≤ dist x y := by
+  sorry
+
 theorem P_col'_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
   intro Pₙ K h_mem h_lim
@@ -281,11 +285,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       rcases mem_iUnion₂.1 this with ⟨p, hpA, hp_seg⟩
       let x : Fin 2 → ℝ := ![p 0, p 1]
       have hx : x ∈ Icc ![-1, -1] ![1, 1] := by
-        simpa [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, Pi.le_def, Fin.forall_fin_two,
-  Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one, x] using hA_sub hpA
-        -- simp_all only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, x, Fin.forall_fin_two, Pi.le_def]
-        -- have : p ∈ Icc ![-1, -1] ![1, 1] := hA_sub hpA
-        -- simp_all [Fin.forall_fin_two, Pi.le_def]
+        simpa [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_Icc, Pi.le_def, Fin.forall_fin_two, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one, x] using hA_sub hpA
       have hsub : segment01 (x 0) (x 1) ⊆ (Pₙ n : Set _) := by
         intro y hy
         simp only [Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
@@ -304,43 +304,54 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       rintro p ⟨hp_in, _⟩
       exact hp_in
 
-    refine ⟨A, hA_sub, by
+    refine ⟨A, hA_sub, ?_⟩
     ext k
     constructor
     · intro hk
       specialize hx k hk
       obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
+      have h_seg_j_P : ∀ j, segment01 (x k hk (φ j) 0) (x k hk (φ j) 1) ⊆ Pₙ (φ j) := by
+        intro j y hy
+        apply h_seg_subset_n
+        exact hy
+
+      set L := segment01 (x_lim 0) (x_lim 1) with hL
+
+      have aux0 : ∀ y ∈ L, ∀ j, ∃ y_n ∈ segment01 (x k hk (φ j) 0) (x k hk (φ j) 1), dist y_n y ≤ hausdorffDist L (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) := by
+
+        sorry
+
+      choose y_n hy_n_mem hy_n_lt using aux0
+
+      have h_seg_tendsto : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 y) := by
+        sorry
+
+      have aux1 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L) (j : ℕ), y_n y hy j ∈ (Pₙ (φ j)) := by
+        intro y hy j
+        sorry
+
+      have aux2 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), ∃ k ∈ K, Tendsto (fun j => y_n y hy (φ j)) atTop (𝓝 k) := by
+        sorry
+
       have hpA : x_lim ∈ A := by
         dsimp [A]
         constructor
         · exact hx_lim_mem
-        · sorry
-      have hk_seg : k ∈ segment01 (x_lim 0) (x_lim 1) := by sorry
-      sorry
-    · rintro ⟨p, ⟨_, hp_mem⟩, hk⟩
-      sorry⟩
-
-    -- obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq (fun n ↦ x k hk n) (fun n ↦ hx k hk n)
-
-    -- choose x hx h_pn_in_seg_n h_seg_subset_n using h_seg_exists
-    -- have h_cover : K = ⋃ p ∈ A, segment01 (p 0) (p 1) := by
-    --   ext k
-    --   simp only [SetLike.mem_coe, Fin.isValue, mem_iUnion, exists_prop]
-    --   constructor
-    --   · sorry
-        -- intro hk'
-        -- set p_lim : Fin 2 → ℝ := ![x₁_lim, x₂_lim] with hp_lim
-        -- have hp_lim_mem : p_lim ∈ Icc ![-1, -1] ![1, 1] := by
-        --   simp_all [Pi.le_def, Fin.forall_fin_two]
-        -- have h_seg_lim_sub : segment01 x₁_lim x₂_lim ⊆ (K : Set _) := by
-        --   sorry
-        -- have aux : k' ∈ segment01 (p_lim 0) (p_lim 1) := by
-        --   sorry
-        -- have : p_lim ∈ A := ⟨hp_lim_mem, h_seg_lim_sub⟩
-        -- exact ⟨p_lim, this, aux⟩
-      -- · rintro ⟨p, ⟨hp₁, hp₂⟩, hx_seg⟩
-      --   exact hp₂ hx_seg
-    -- exact ⟨A, hA_sub, h_cover⟩
+        · intro y hy
+          obtain ⟨k, hkK, hk_lim⟩ := aux2 y hy
+          have hy_lim : Tendsto (fun j => y_n y hy (φ j)) atTop (𝓝 y) := h_seg_tendsto y hy
+          have : k = y := tendsto_nhds_unique hk_lim hy_lim
+          rwa [← this]
+      simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_iUnion, exists_prop]
+      use x_lim
+      constructor
+      · exact hpA
+      · sorry
+    · intro hk_union
+      rcases mem_iUnion₂.1 hk_union with ⟨p, hpA, hk_seg⟩
+      rw [hA] at hpA
+      rcases hpA with ⟨_, hseg_sub⟩
+      exact hseg_sub hk_seg
 
   have h_forall : ∀ (v : ℝ), |v| ≤ 1 / 2 → ∃ x₁ x₂, x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ K := by
     intro v hv
@@ -361,6 +372,29 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
     obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq hx
 
+    have h_seg_n_P : ∀ j, segment01 (x (φ j) 0) (x (φ j) 1) ⊆ Pₙ (φ j) := by
+      intro n y hy
+      apply h_segP
+      exact hy
+
+    set L := segment01 (x_lim 0) (x_lim 1) with hL
+
+    have aux0 : ∀ y ∈ L, ∀ j, ∃ y_n ∈ segment01 (x (φ j) 0) (x (φ j) 1), dist y_n y ≤ hausdorffDist L (segment01 (x (φ j) 0) (x (φ j) 1)) := by
+      sorry
+
+    choose y_n hy_n_mem hy_n_lt using aux0
+
+    have h_seg_tendsto : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 y) := by
+      sorry
+
+    have aux1 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L) (j : ℕ), y_n y hy j ∈ (Pₙ (φ j)) := by
+      intro y hy j
+      sorry
+
+    have aux2 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), ∃ k ∈ K, Tendsto (fun j => y_n y hy (φ j)) atTop (𝓝 k) := by
+      sorry
+
+    -- rw[NormedAddCommGroup.tendsto_atTop'] at h_seg_cont
     have hdiff_lim : (x_lim 1) - (x_lim 0) = v := by
       have h1 : Tendsto (fun n ↦ (x (φ n)) 1) atTop (𝓝 (x_lim 1)) := by
         sorry
@@ -373,14 +407,13 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
         simpa using hconst ▸ tendsto_const_nhds
       exact tendsto_nhds_unique hsub_lim hconst_lim
 
-    -- This is not the statement I want
-    -- have h_seg_lim : Tendsto (fun n ↦ segment01 (x (φ n) 0) (x (φ n) 1)) atTop (𝓝 (segment01 (x_lim 0) (x_lim 1))) := by sorry
-    -- rw [NormedAddCommGroup.tendsto_atTop'] at h_seg_lim
-
     have h_segK : segment01 (x_lim 0) (x_lim 1) ⊆ (K : Set _) := by
       intro y hy
-      sorry
-
+      have hyL : y ∈ L := by simpa [hL] using hy
+      rcases aux2 y hyL with ⟨k', hk'_in_K, hk'_lim⟩
+      have hy_lim : Tendsto (fun j => y_n y hyL (φ j)) atTop (𝓝 y) := h_seg_tendsto y hyL
+      have : k' = y := tendsto_nhds_unique hk'_lim hy_lim
+      rwa [this] at hk'_in_K
 
     exact ⟨x_lim 0, x_lim 1, by simp_all [Fin.forall_fin_two, Pi.le_def], by simp_all [Fin.forall_fin_two, Pi.le_def], hdiff_lim, h_segK⟩
 
