@@ -367,9 +367,11 @@ lemma exists_point_on_segment01_within_HD
     simpa [dist_comm, eq_comm] using ht_eq
   exact ⟨t, ht_mem, by simpa [this] using h_le⟩
 
+-- Proven in the proof of 2.2
 theorem thing_again {ι : Type*} {sn : ι → Set (Fin 2 → ℝ)} {pₙ : ι → Fin 2 → ℝ}
     {L : Set (Fin 2 → ℝ)} {k : Fin 2 → ℝ} {l : Filter ι}
     (h : ∀ i, pₙ i ∈ sn i)
+    (hL : IsClosed L)
     (hs : Tendsto (fun i ↦ hausdorffDist (sn i) L) l (𝓝 0))
     (hx : Tendsto pₙ l (𝓝 k)) :
     k ∈ L := by
@@ -383,7 +385,8 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
   -- simp only [Metric.NonemptyCompacts.dist_eq] at h_lim
   have hPn_bdd (n : ℕ) : IsBounded (Pₙ n : Set (Fin 2 → ℝ)) := IsBounded_P (h_mem n)
   have hK_bdd : IsBounded (K : Set (Fin 2 → ℝ)) := (K.toCompacts.isCompact).isBounded
-  have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := hausdorffEdist_ne_top_of_nonempty_of_bounded (Pₙ n).nonempty K.nonempty (hPn_bdd n) hK_bdd
+  have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤ :=
+    hausdorffEdist_ne_top_of_nonempty_of_bounded (Pₙ n).nonempty K.nonempty (hPn_bdd n) hK_bdd
 
   have : ∀ k ∈ K, ∀ n, ∃ p ∈ Pₙ n, dist p k ≤ dist K (Pₙ n) := by
     intro k hk n
@@ -511,110 +514,66 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L) atTop (𝓝 0) := by
         apply thing_both
         all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
-
+      observe h_L_compact : IsCompact L
       refine mem_iUnion.2 ?_
       refine ⟨x_lim, ?_⟩
       refine mem_iUnion.2 ?_
       refine ⟨?hxlim_in_A, ?k_in_L⟩
-      · have hxlim₁ : x_lim ∈ Icc ![-1,-1] ![1,1] := hx_lim_mem
-        have hLsubK : (L : Set (Fin 2 → ℝ)) ⊆ (K : Set _) := by
-          have aux0 : Tendsto (fun j => hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) K) atTop (𝓝 0) := by sorry
-          have aux1 : fun j ↦ hausdorffDist ((segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) ↑(Pₙ (φ j) : (Fin 2 → ℝ))) ≤ fun j => hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L := by sorry
+      have hLsubK : L ⊆ (K : Set _) := by
+        have ye : ∀ (j : ℕ), hausdorffDist L K ≤ hausdorffDist L (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) + hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) K := by
+          intro j
+          refine hausdorffDist_triangle ?_
+          apply hausdorffEdist_ne_top_of_nonempty_of_bounded
+          · rw [hL]
+            exact ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩
+          · exact ⟨![x k hk (φ j) 0, 0], left_mem_segment _ _ _⟩
+          · exact h_L_compact.isBounded
+          · have : IsCompact (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) := isCompact_segment01 _ _
+            exact this.isBounded
+        have bah : hausdorffDist L K ≤ 0 := by sorry
+        have final : hausdorffDist L K = 0 := by
+          -- refine squeeze_zero
+          -- refine le_of_tendsto_of_tendsto'
           sorry
-        exact ⟨hxlim₁, by simpa [hL] using hLsubK⟩
-      · --apply thing_again
-        all_goals sorry
-        -- · have h₁ : ∀ j, Metric.infDist (pₙ k hk (φ j)) L ≤ hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L := by
-      --     intro j
-      --     exact Metric.infDist_le_hausdorffDist_of_mem
-      --       (x := pₙ k hk (φ j))
-      --       (s := segment01 (x k hk (φ j) 0) (x k hk (φ j) 1))
-      --       (t := L)
-      --       (by sorry)
-      --       (by sorry)
-      --   have : Tendsto (fun j => Metric.infDist (pₙ k hk (φ j)) L) atTop (𝓝 0) := by
-      --     apply squeeze_zero (fun _ => Metric.infDist_nonneg)
-      --     · exact h₁
-      --     · simpa using h_seg_HD0
-      --   have : Metric.infDist k L = 0 := by sorry
-      --   sorry
-
-    --   have aux0 : ∀ y ∈ L, ∀ j, ∃ y_n ∈ segment01 (x k hk (φ j) 0) (x k hk (φ j) 1), dist y_n y ≤ hausdorffDist L (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) := by
-    --     intro y hy j
-    --     have hy' : y ∈ (segment01 (x_lim 0) (x_lim 1) : Set (Fin 2 → ℝ)) := by simpa [L, hL]
-    --     rcases exists_point_on_segment01_within_HD
-    --         (a := x_lim 0) (b := x_lim 1)
-    --         (a' := x k hk (φ j) 0) (b' := x k hk (φ j) 1)
-    --         (y := y) hy' with ⟨y_n, hy_n_mem, hy_n_le⟩
-    --     refine ⟨y_n, hy_n_mem, ?_⟩
-    --     simpa [L, hL] using hy_n_le
-
-    --   choose y_n hy_n_mem hy_n_lt using aux0
-
-    --   have h_seg_tendsto : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 y) := by
-    --     intro y hy
-    --     let a : ℕ → (Fin 2 → ℝ) := fun j ↦ ![x k hk (φ j) 0, 0]
-    --     let b : ℕ → (Fin 2 → ℝ) := fun j ↦ ![x k hk (φ j) 1, 1]
-    --     let a₀ : Fin 2 → ℝ := ![x_lim 0, 0]
-    --     let b₀ : Fin 2 → ℝ := ![x_lim 1, 1]
-    --     have ha : Tendsto a atTop (𝓝 a₀) := by
-    --       refine (tendsto_pi_nhds.2 ?_)
-    --       intro i
-    --       fin_cases i <;> simp [a, a₀, hx_lim_mem.1, hφ_lim]
-    --       sorry
-    --     have hb : Tendsto b atTop (𝓝 b₀) := by
-    --       refine (tendsto_pi_nhds.2 ?_) ; intro i ; fin_cases i <;> simp [b, b₀, hx_lim_mem.2, hφ_lim]; sorry
-
-    --     have hHD0 : Tendsto (fun j ↦ hausdorffDist (segment ℝ (a j) (b j)) (segment ℝ a₀ b₀)) atTop (𝓝 0) :=
-    --       thing_both (xn := a) (yn := b) (x := a₀) (y := b₀) ha hb
-
-    --     have hbound : ∀ j, dist (y_n y hy (φ j)) y ≤ hausdorffDist (segment ℝ (a j) (b j)) (segment ℝ a₀ b₀) := by
-    --       intro j
-    --       sorry
-    --       -- simpa [segment01_eq, L, hL] using hy_n_lt y hy (φ j)
-    --     refine (tendsto_iff_dist_tendsto_zero).mpr ?_
-    --     have hnonneg : ∀ j, 0 ≤ dist (y_n y hy (φ j)) y := by intro j; exact dist_nonneg
-    --     exact squeeze_zero hnonneg hbound hHD0
-
-    --   have aux1 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L) (j : ℕ), y_n y hy j ∈ (Pₙ (φ j)) := by
-    --     intro y hy j
-    --     exact (h_seg_j_P j) (hy_n_mem y hy j)
-
-    --   have aux2 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), ∃ k ∈ K, Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 k) := by
-    --     intro y hy
-    --     sorry
-
-    --   have hpA : x_lim ∈ A := by
-    --     dsimp [A]
-    --     constructor
-    --     · exact hx_lim_mem
-    --     · intro y hy
-    --       obtain ⟨k, hkK, hk_lim⟩ := aux2 y hy
-    --       have hy_lim : Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 y) := h_seg_tendsto y hy
-    --       have : k = y := tendsto_nhds_unique hk_lim hy_lim
-    --       rwa [← this]
-    --   simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Fin.isValue, mem_iUnion, exists_prop]
-    --   use x_lim
-    --   constructor
-    --   · exact hpA
-    --   · let S : ℕ → Set (Fin 2 → ℝ) := fun j ↦ segment ℝ ![x k hk (φ j) 0, 0] ![x k hk (φ j) 1, 1]
-    --     have S_eq01 : ∀ j, S j = segment01 (x k hk (φ j) 0) (x k hk (φ j) 1) := by intro j; rfl
-    --     have L_eq : L = segment ℝ ![x_lim 0, 0] ![x_lim 1, 1] := by simpa [hL]
-    --     have ha : Tendsto (fun j ↦ ![x k hk (φ j) 0, 0]) atTop (𝓝 ![x_lim 0, 0]) := by
-    --       refine (tendsto_pi_nhds.2 ?_); intro i; fin_cases i <;>
-    --       simp [hφ_lim, tendsto_const_nhds]
-    --       sorry
-    --     have hb : Tendsto (fun j ↦ ![x k hk (φ j) 1, 1]) atTop (𝓝 ![x_lim 1, 1]) := by
-    --       refine (tendsto_pi_nhds.2 ?_); intro i; fin_cases i <;>
-    --       simp [hφ_lim, tendsto_const_nhds]
-    --       sorry
-    --     sorry
+        rw [Metric.hausdorffDist_zero_iff_closure_eq_closure, IsClosed.closure_eq, IsClosed.closure_eq] at final
+        · simp [final]
+        · exact h_closed
+        · exact IsCompact.isClosed h_L_compact
+        · apply hausdorffEdist_ne_top_of_nonempty_of_bounded
+          · simpa [segment01] using (show (segment ℝ ![x_lim 0, 0] ![x_lim 1, 1]).Nonempty from ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩)
+          · exact NonemptyCompacts.nonempty K
+          · exact h_L_compact.isBounded
+          · exact hK_bdd
+      · exact ⟨hx_lim_mem, by simpa [hL] using hLsubK⟩
+      · observe hL_compact : IsCompact L
+        observe hL_closed : IsClosed L
+        have h_inf_to_zero : Tendsto (fun j ↦ infDist (pₙ k hk (φ j)) L) atTop (𝓝 0) := by
+          refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h_seg_HD0 ?lower ?upper
+          · intro i
+            exact infDist_nonneg
+          · intro i
+            apply infDist_le_hausdorffDist_of_mem
+            · exact h_pn_in_seg_n k hk (φ i)
+            · exact hausdorffEdist_ne_top_segment01 (x k hk (φ i) 0) (x k hk (φ i) 1) (x_lim 0) (x_lim 1)
+        have h_inf_to_k : Tendsto (fun j ↦ infDist (pₙ k hk (φ j)) L) atTop (𝓝 (infDist k L)) := by
+          have hcont : Continuous (fun x => infDist x L) := by
+            simpa using (Metric.continuous_infDist_pt (s := L))
+          apply (hcont.tendsto k).comp
+          have : Tendsto (fun j ↦ pₙ k hk (φ j)) atTop (𝓝 k) := by
+            have hφ_tendsto : Tendsto φ atTop atTop := StrictMono.tendsto_atTop hφ
+            exact (h_tendsto k hk).comp hφ_tendsto
+          exact this
+        have h_k_zero : infDist k L = 0 := tendsto_nhds_unique h_inf_to_k h_inf_to_zero
+        have hk_closure : k ∈ closure L := by
+          rw [mem_closure_iff_infDist_zero]
+          · exact h_k_zero
+          · simpa [segment01] using (show (segment ℝ ![x_lim 0, 0] ![x_lim 1, 1]).Nonempty from ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩)
+        simpa [hL_closed.closure_eq] using hk_closure
     · intro hk_union
       rcases mem_iUnion₂.1 hk_union with ⟨p, hpA, hk_seg⟩
       rw [hA] at hpA
       rcases hpA with ⟨_, hseg_sub⟩
       exact hseg_sub hk_seg
-
 
   -- PROPERTY 2
 
@@ -649,72 +608,26 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
     refine ⟨x_lim 0, x_lim 1, ?hx0, ?hx1, ?hdiff_lim, ?hLsubK⟩
     · exact (by simp_all [Pi.le_def, Fin.forall_fin_two])
-    · exact (by simp_all [Pi.le_def, Fin.forall_fin_two])
+    · sorry
+      -- exact (by simp_all [Pi.le_def, Fin.forall_fin_two])
     · have h0 : Tendsto (fun j ↦ (x (φ j)) 0) atTop (𝓝 (x_lim 0)) := ((continuous_apply 0).tendsto _).comp hφ_lim
       have h1 : Tendsto (fun j ↦ (x (φ j)) 1) atTop (𝓝 (x_lim 1)) := ((continuous_apply 1).tendsto _).comp hφ_lim
       have hsub : Tendsto (fun j ↦ (x (φ j) 1 - x (φ j) 0)) atTop (𝓝 (x_lim 1 - x_lim 0)) := h1.sub h0
       have hconst : Tendsto (fun _ : ℕ ↦ v) atTop (𝓝 v) := tendsto_const_nhds
       have : Tendsto (fun j ↦ (x (φ j) 1 - x (φ j) 0)) atTop (𝓝 v) := by simp [hdiff]
       exact tendsto_nhds_unique hsub this
-    · sorry
-    -- have aux0 : ∀ y ∈ L, ∀ j, ∃ y_n ∈ segment01 (x (φ j) 0) (x (φ j) 1), dist y_n y ≤ hausdorffDist L (segment01 (x (φ j) 0) (x (φ j) 1)) := by
-    --   intro y hy j
-    --   have hy' : y ∈ (segment01 (x_lim 0) (x_lim 1) : Set (Fin 2 → ℝ)) := by simpa [L, hL]
-    --   rcases exists_point_on_segment01_within_HD
-    --         (a := x_lim 0) (b := x_lim 1)
-    --         (a' := x (φ j) 0) (b' := x (φ j) 1)
-    --         (y := y) hy' with ⟨y_n, hy_n_mem, hy_n_le⟩
-    --   refine ⟨y_n, hy_n_mem, ?_⟩
-    --   simpa [L, hL] using hy_n_le
-
-    -- choose y_n hy_n_mem hy_n_lt using aux0
-
-    -- have h_seg_tendsto : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 y) := by
-    --   intro y hy
-    --   let a : ℕ → (Fin 2 → ℝ) := fun j ↦ ![x (φ j) 0, 0]
-    --   let b : ℕ → (Fin 2 → ℝ) := fun j ↦ ![x (φ j) 1, 1]
-    --   let a₀ : Fin 2 → ℝ := ![x_lim 0, 0]
-    --   let b₀ : Fin 2 → ℝ := ![x_lim 1, 1]
-    --   have ha : Tendsto a atTop (𝓝 a₀) := by
-    --     refine (tendsto_pi_nhds.2 ?_) ; intro i ; fin_cases i <;> simp [a, a₀, hφ_lim]; sorry
-    --   have hb : Tendsto b atTop (𝓝 b₀) := by
-    --     refine (tendsto_pi_nhds.2 ?_) ; intro i ; fin_cases i <;> simp [b, b₀, hφ_lim]; sorry
-    --   have hHD0 : Tendsto (fun j ↦ hausdorffDist (segment ℝ (a j) (b j)) (segment ℝ a₀ b₀)) atTop (𝓝 0) :=
-    --     thing_both (xn := a) (yn := b) (x := a₀) (y := b₀) ha hb
-    --   have hbound : ∀ j, dist (y_n y hy (φ j)) y ≤ hausdorffDist (segment ℝ (a j) (b j)) (segment ℝ a₀ b₀) := by
-    --     intro j
-    --     sorry
-    --   refine (tendsto_iff_dist_tendsto_zero).mpr ?_
-    --   have hnonneg : ∀ j, 0 ≤ dist (y_n y hy (φ j)) y := by intro j; exact dist_nonneg
-    --   exact squeeze_zero hnonneg hbound hHD0
-
-
-    -- have aux1 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L) (j : ℕ), y_n y hy j ∈ (Pₙ (φ j)) := by
-    --   intro y hy j
-    --   exact (h_seg_n_P j) (hy_n_mem y hy j)
-
-    -- have aux2 : ∀ (y : Fin 2 → ℝ) (hy : y ∈ L), ∃ k ∈ K, Tendsto (fun j ↦ y_n y hy (φ j)) atTop (𝓝 k) := by
-    --   sorry
-
-    -- -- rw[NormedAddCommGroup.tendsto_atTop'] at h_seg_cont
-    -- have hdiff_lim : (x_lim 1) - (x_lim 0) = v := by
-    --   have h0 : Tendsto (fun n ↦ (x (φ n)) 0) atTop (𝓝 (x_lim 0)) := (tendsto_pi_nhds.1 hφ_lim) 0
-    --   have h1 : Tendsto (fun n ↦ (x (φ n)) 1) atTop (𝓝 (x_lim 1)) := (tendsto_pi_nhds.1 hφ_lim) 1
-    --   have hsub_lim : Tendsto (fun n ↦ (x (φ n) 1) - (x (φ n) 0)) atTop (𝓝 ((x_lim 1) - (x_lim 0))) := h1.sub h0
-    --   have hconst : (fun n ↦ x (φ n) 1 - x (φ n) 0) = fun _ ↦ v := by funext n; simp [hdiff]
-    --   have hconst_lim : Tendsto (fun n ↦ x (φ n) 1 - x (φ n) 0) atTop (𝓝 v) := by
-    --     simpa using hconst ▸ tendsto_const_nhds
-    --   exact tendsto_nhds_unique hsub_lim hconst_lim
-
-    -- have h_segK : segment01 (x_lim 0) (x_lim 1) ⊆ (K : Set _) := by
-    --   intro y hy
-    --   have hyL : y ∈ L := by simpa [hL] using hy
-    --   rcases aux2 y hyL with ⟨k', hk'_in_K, hk'_lim⟩
-    --   have hy_lim : Tendsto (fun j ↦ y_n y hyL (φ j)) atTop (𝓝 y) := h_seg_tendsto y hyL
-    --   have : k' = y := tendsto_nhds_unique hk'_lim hy_lim
-    --   rwa [this] at hk'_in_K
-
-    -- exact ⟨x_lim 0, x_lim 1, by simp_all [Fin.forall_fin_two, Pi.le_def], by simp_all [Fin.forall_fin_two, Pi.le_def], hdiff_lim, h_segK⟩
+    · show L ⊆ K
+      observe h_L_compact : IsCompact L
+      have final : hausdorffDist L K = 0 := by sorry
+      rw [Metric.hausdorffDist_zero_iff_closure_eq_closure, IsClosed.closure_eq, IsClosed.closure_eq] at final
+      · simp [final]
+      · exact h_closed
+      · exact IsCompact.isClosed h_L_compact
+      · apply hausdorffEdist_ne_top_of_nonempty_of_bounded
+        · simpa [segment01] using (show (segment ℝ ![x_lim 0, 0] ![x_lim 1, 1]).Nonempty from ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩)
+        · exact NonemptyCompacts.nonempty K
+        · exact h_L_compact.isBounded
+        · exact hK_bdd
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
