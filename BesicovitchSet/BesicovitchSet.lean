@@ -10,7 +10,7 @@ set_option maxHeartbeats 300000
 
 namespace Besicovitch
 
-open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory MetricSpace
+open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory MetricSpace ENNReal NNReal
 
 -- Formalise the entirety of Section 2. Section 4 is nonsense
 
@@ -97,12 +97,14 @@ end
 
 section
 
+/-- TO DO -/
 def rectangle : Set (Fin 2 → ℝ) := Icc ![-1, 0] ![1,1]
 
 lemma rectangle_IsBounded : IsBounded rectangle := by simp_rw [rectangle, isBounded_Icc]
 
 lemma rectangle_convex : Convex ℝ rectangle := by simp_rw [rectangle, convex_Icc]
 
+/-- TO DO -/
 def segment01 (x₁ x₂ : ℝ) : Set (Fin 2 → ℝ) :=
   segment ℝ ![x₁, 0] ![x₂, 1]
 
@@ -315,7 +317,7 @@ theorem thing_both {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → 
   exact squeeze_zero (fun i ↦ hnonneg i) hbound hsum
 
 lemma isCompact_segment01 (a b : ℝ) :
-    IsCompact (segment01 a b : Set (Fin 2 → ℝ)) := by
+    IsCompact (segment01 a b) := by
   have : segment ℝ ![a, 0] ![b, 1] = AffineMap.lineMap ![a, 0] ![b, 1] '' Icc (0 : ℝ) 1 := by
     simp [segment_eq_image_lineMap]
   have hcont : Continuous fun t : ℝ => AffineMap.lineMap ![a, 0] ![b, 1] t := by
@@ -324,9 +326,7 @@ lemma isCompact_segment01 (a b : ℝ) :
 
 /-- The Hausdorff extended distance between two `segment01`s is finite. -/
 lemma hausdorffEdist_ne_top_segment01 (a b a' b' : ℝ) :
-    EMetric.hausdorffEdist
-      (segment01 a b : Set (Fin 2 → ℝ))
-      (segment01 a' b' : Set (Fin 2 → ℝ)) ≠ ⊤ := by
+    EMetric.hausdorffEdist (segment01 a b) (segment01 a' b') ≠ ⊤ := by
   have Lne : (segment01 a  b  : Set (Fin 2 → ℝ)).Nonempty :=
     ⟨![a, 0], by simpa [segment01] using left_mem_segment ℝ ![a,0] ![b,1]⟩
   have Rne : (segment01 a' b' : Set (Fin 2 → ℝ)).Nonempty :=
@@ -362,16 +362,6 @@ lemma exists_point_on_segment01_within_HD
   have : dist t y = Metric.infDist y (segment01 a' b' : Set _) := by
     simpa [dist_comm, eq_comm] using ht_eq
   exact ⟨t, ht_mem, by simpa [this] using h_le⟩
-
--- Proven in the proof of 2.2
-theorem thing_again {ι : Type*} {sn : ι → Set (Fin 2 → ℝ)} {pₙ : ι → Fin 2 → ℝ}
-    {L : Set (Fin 2 → ℝ)} {k : Fin 2 → ℝ} {l : Filter ι}
-    (h : ∀ i, pₙ i ∈ sn i)
-    (hL : IsClosed L)
-    (hs : Tendsto (fun i ↦ hausdorffDist (sn i) L) l (𝓝 0))
-    (hx : Tendsto pₙ l (𝓝 k)) :
-    k ∈ L := by
-  sorry
 
 theorem P_col'_IsClosed : IsClosed P_collection' := by
   rw [← isSeqClosed_iff_isClosed, IsSeqClosed]
@@ -498,9 +488,6 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
     · intro hk
       obtain ⟨x_lim, hx_lim_mem, φ, hφ, hφ_lim⟩ := isCompact_Icc.tendsto_subseq (hx k hk)
       set L := segment01 (x_lim 0) (x_lim 1) with hL
-      -- set L : NonemptyCompacts (Fin 2 → ℝ) := ⟨⟨segment01 (x_lim 0) (x_lim 1), isCompact_segment01 _ _⟩, by
-      --   simpa [segment01] using (show (segment ℝ ![x_lim 0, 0] ![x_lim 1, 1]).Nonempty from ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩)⟩
-      -- with hL
 
       have h_seg_j_P : ∀ j, segment01 (x k hk (φ j) 0) (x k hk (φ j) 1) ⊆ Pₙ (φ j) := by
         intro j y hy
@@ -548,12 +535,6 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
           have : Tendsto (fun n => dist (Pₙ n) K) atTop (𝓝 0) := by
             refine Metric.tendsto_atTop.2 ?_
             simpa [dist_comm] using h_lim
-          --   intro ε hε
-          --   rcases h_lim ε hε with ⟨N, hN⟩
-          --   refine ⟨N, ?_⟩
-          --   intro n hn
-          --   have hnn : 0 ≤ dist (Pₙ n) K := dist_nonneg
-          --   simpa [Real.dist_eq, abs_of_nonneg hnn] using hN n hn
           simpa [Metric.NonemptyCompacts.dist_eq] using this
 
         have hHD_PK_subseq : Tendsto (fun j => hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
@@ -733,10 +714,6 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
-#exit
-
---So I need to prove 2.4 which will be used to prove 2.5 which then implies 2.3
-
 -- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
 lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
 
@@ -767,13 +744,6 @@ def hasThinCover (P : Set (Fin 2 → ℝ)) (v ε : ℝ) : Prop :=
         hSlice P y ⊆ hSlice (⋃ r ∈ R, (r : Set _)) y) ∧
       -- and the total horizontal length is < 100 ε
       (∀ y, y ∈ window v ε → (volume (hSlice (⋃ r ∈ R, (r : Set _)) y)).toReal < 100 * ε)
-
--- instance : MetricSpace P_collection' := inferInstance   -- inherits the Hausdorff metric `d`
-
--- We dont need this.
--- `𝒫(v, ε)` inside plain subsets of the big rectangle.
--- def P_v_eps (v ε : ℝ) : Set P_collection :=
---   {P | hasThinCover P v ε}
 
 /-- The same collection, but as a subset of the Hausdorff–metric
     space `NonemptyCompacts (Fin 2 → ℝ)`. -/
@@ -835,6 +805,19 @@ theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 <
   dsimp only [ball]
   sorry
 
+theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    Dense (P_v_eps' v ε) := by
+  sorry
+
+theorem lemma_2_4 {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    IsClosed (P_v_eps' v ε)ᶜ ∧ IsNowhereDense (P_v_eps' v ε)ᶜ := by
+  simp_rw [isClosed_isNowhereDense_iff_compl, compl_compl]
+  exact ⟨P_v_eps_open hv₀ hv₁ hε, P_v_eps_dense hv₀ hv₁ hε⟩
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 /--
 In a Baire space, every nonempty open set is non‐meagre,
 that is, it cannot be written as a countable union of nowhere‐dense sets.
@@ -847,24 +830,197 @@ theorem not_isMeagre_of_isOpen {X : Type*} {s : Set X} [TopologicalSpace X] [Bai
     with ⟨x, hx, hxc⟩
   exact hxc hx
 
-theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
-    Dense (P_v_eps' v ε) := by
-  sorry
+/-- A set of second category (i.e. non-meagre) is nonempty. -/
+lemma nonempty_of_not_IsMeagre {X : Type*} [TopologicalSpace X] {s : Set X} (hs : ¬IsMeagre s) : s.Nonempty := by
+  contrapose! hs
+  simpa [hs] using (IsMeagre.empty)
 
-theorem lemma_2_4 {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
-    IsClosed (P_v_eps' v ε)ᶜ ∧ IsNowhereDense (P_v_eps' v ε)ᶜ := by
-  simp_rw [isClosed_isNowhereDense_iff_compl, compl_compl]
-  exact ⟨P_v_eps_open hv₀ hv₁ hε, P_v_eps_dense hv₀ hv₁ hε⟩
+/-- In a nonempty Baire space, any dense `Gδ` set is not meagre. -/
+theorem IsGδ_dense_not_meagre {X : Type*} [Nonempty X] [TopologicalSpace X] [BaireSpace X] {s : Set X} (hs : IsGδ s) (hd : Dense s) : ¬ IsMeagre s := by
+  intro h
+  rcases (mem_residual).1 h with ⟨t, hts, htG, hd'⟩
+  rcases (hd.inter_of_Gδ hs htG hd').nonempty with ⟨x, hx₁, hx₂⟩
+  exact (hts hx₂) hx₁
+
+/-- In a nonempty Baire space, a residual (comeagre) set is not meagre. -/
+lemma not_isMeagre_of_mem_residual {X : Type*} [TopologicalSpace X]
+    [BaireSpace X] [Nonempty X] {s : Set X} (hs : s ∈ residual X) :
+    ¬ IsMeagre s := by
+  -- From `mem_residual`, pick a dense Gδ subset `t ⊆ s`.
+  rcases (mem_residual (X := X)).1 hs with ⟨t, ht_sub, htGδ, ht_dense⟩
+  -- Dense Gδ sets aren’t meagre in a nonempty Baire space.
+  -- If `s` were meagre, then so would be `t ⊆ s`, contradiction.
+  intro hs_meagre
+  exact not_isMeagre_of_isGδ_of_dense htGδ ht_dense (hs_meagre.mono ht_sub)
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def Pn (φ : ℕ → ℝ≥0) (n : ℕ) : Set P_collection' := ⋂ r ∈ Finset.range (n + 1), P_v_eps' ((r : ℝ) * (φ n : ℝ)) (φ n : ℝ)
+
+def Pstar (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n : ℕ, Pn φ (n + 1)
+
+def Pstar' (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n ∈ Set.Ici (1 : ℕ), Pn φ n
+
+lemma Pstar_eq_Pstar' (φ : ℕ → ℝ≥0) :
+    Pstar φ = Pstar' φ := by
+  ext P
+  constructor
+  · -- from ⋂_{m} Pn (m+1) to ⋂_{n≥1} Pn n
+    intro h
+    refine mem_iInter₂.2 ?_
+    intro n hn
+    -- write n = m+1 with m := n-1
+    obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := Nat.exists_eq_succ_of_ne_zero (Nat.pos_iff_ne_zero.mp hn)
+    simpa using (mem_iInter.mp h m)
+  · -- from ⋂_{n≥1} Pn n to ⋂_{m} Pn (m+1)
+    intro h
+    refine mem_iInter.2 ?_
+    intro m
+    have : 1 ≤ m + 1 := Nat.succ_le_succ (Nat.zero_le _)
+    simpa using (mem_iInter₂.mp h (m + 1) this)
+
+-- φ : ℕ → ℝ≥0
+-- h₁φ : StrictAnti φ
+-- h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1
+-- h₃φ : Tendsto φ atTop (𝓝 0)
 
 variable [BaireSpace P_collection']
 
+variable {φ : ℕ → ℝ≥0} {n : ℕ} (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+
+-- Is this necessary?
 theorem P_v_eps'_not_meagre {v ε : ℝ} (h0 : 0 ≤ v) (h1 : v ≤ 1) (hε : 0 < ε) :
     ¬ IsMeagre (P_v_eps' v ε) :=
   not_isMeagre_of_isOpen (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
 
-def Pn (n : ℕ): Set P_collection' := ⋂ r ∈ Finset.range (n + 1), P_v_eps' (r / n) ((1 : ℕ) / n)
+/-- `Pstar(φ)` is dense: countable intersection of open dense sets. -/
+lemma Dense_Pstar {φ : ℕ → ℝ≥0} : Dense (Pstar φ) := by
+  sorry
 
-def Pstar : Set P_collection' := ⋂ n, Pn n
+/-- `Pstar(φ)` is a Gδ: countable intersection of open sets. -/
+lemma IsGδ_Pstar : IsGδ (Pstar φ) := by
+  simp_rw [isGδ_iff_eq_iInter_nat]
+  sorry
+
+theorem Pstar_notMeagre : ¬ IsMeagre (Pstar φ) := by
+  haveI : Nonempty P_collection' := by
+    rcases P_collection'_nonempty with ⟨P, hP⟩
+    exact ⟨P, hP⟩
+  exact not_isMeagre_of_isGδ_of_dense IsGδ_Pstar Dense_Pstar
+
+def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
+
+lemma Pstar_sub_E_set :
+    Pstar φ ⊆ E_set := by
+  intro P hP
+  have hmem : ∀ m, P ∈ Pn φ (m+1) := by
+    intro m
+    simpa [Pstar] using (mem_iInter.mp hP m)
+  intro u hu
+  have hbound : ∀ m, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal < 100 * (φ (m+1) : ℝ) := by
+    sorry
+  sorry
+
+theorem thm2_5 (h : Pstar φ ⊆ E_set) : ¬ IsMeagre E_set := by
+  intro hM
+  apply IsMeagre.mono at h
+  · simp [Pstar_notMeagre] at h
+  · exact hM
+
+def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
+
+lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
+  intro P hP
+  simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
+  sorry
+
+  -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
+  -- #check MeasureTheory.lintegral_prod_le
+  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
+  -- rw [MeasureTheory.Measure.volume_eq_prod]
+  -- Fubini argument?
+
+/-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
+theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
+  -- exact thm2_5 (Pstar_sub_E_set.mono E_sub_P_zero_vol)
+  sorry
+
+theorem Exists_P0 : P_zero_vol.Nonempty := nonempty_of_not_IsMeagre theorem_2_3
+
+#exit
+
+lemma Dense_Pstar : Dense Pstar := by
+  sorry
+
+lemma IsGδ_Pstar : IsGδ Pstar := by
+  simp_rw [isGδ_iff_eq_iInter_nat]
+  sorry
+
+theorem Pstar_notMeagre : ¬ IsMeagre (Pstar) := by
+  haveI : Nonempty P_collection' := by
+    rcases P_collection'_nonempty with ⟨P, hP⟩
+    exact ⟨P, hP⟩
+  exact IsGδ_dense_not_meagre IsGδ_Pstar Dense_Pstar
+
+def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
+
+lemma Pstar_sub_E_set : Pstar ⊆ E_set := by
+  intro P hP
+  sorry
+  -- have hMem_n : ∀ n ≥ 1, P ∈ Pn n n := by
+  --   intro n
+  --   simpa [Pstar] using (mem_iInter.mp hP n)
+  -- intro u hu
+  -- simp_rw [Pn, P_v_eps', hasThinCover, hSlice] at hMem_n
+  -- have bound : ∀ n > 0, (volume (hSlice (P : Set _) u)).toReal ≤ 100 / (n : ℕ) := by
+  --   intro n hn
+  --   -- this comes from the defining property of it being ≤ 100ε
+  --   simp_rw [hSlice]
+  --   obtain ⟨r, hr, hur⟩ : ∃ r ∈ Finset.range (n + 1), u ∈ window ((r : ℝ) / n) (1 / n) := by
+  --     sorry
+  --   have hPn := (Set.mem_iInter₂.mp (hMem_n n)) r hr
+  --   rcases hPn with ⟨R, _hRaxis, hsub, hvol⟩
+  --   have hmono : (volume {x | ![x, u] ∈ (P : Set (Fin 2 → ℝ))}).toReal ≤ (volume {x | ![x, u] ∈ ⋃ r ∈ R, r}).toReal := by
+  --     -- exact ENNReal.toReal_mono (measure_mono hsub u.toNNReal hur)
+  --     sorry
+  --   have hbound : (volume {x | ![x, u] ∈ ⋃ r ∈ R, r}).toReal ≤ 100 / (n : ℝ) := by
+  --     sorry
+  --   exact hmono.trans hbound
+  -- apply le_antisymm _ (by positivity)
+  -- apply le_of_forall_ge
+  -- intro ε hε
+  -- sorry
+
+theorem thm2_5 : ¬ IsMeagre E_set := by
+  intro h
+  observe : Pstar ⊆ E_set
+  apply IsMeagre.mono at this
+  · simpa [Pstar_notMeagre]
+  · exact h
+
+def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
+
+lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
+  intro P hP
+  simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
+  sorry
+
+  -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
+  -- #check MeasureTheory.lintegral_prod_le
+  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
+  -- rw [MeasureTheory.Measure.volume_eq_prod]
+  -- Fubini argument?
+
+/-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
+theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
+  intro h
+  exact thm2_5 (h.mono E_sub_P_zero_vol)
+
+theorem Exists_P0 : P_zero_vol.Nonempty := by exact nonempty_of_not_IsMeagre theorem_2_3
+
+#exit
 
 -- Junk?
 lemma P_r_n_not_meagre (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : ¬ IsMeagre (P_v_eps' (r / n) ((1 : ℕ) / n)) :=  by
@@ -881,11 +1037,6 @@ lemma P_r_n_not_meagre (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : ¬ IsMeagre (P
       · exact hrn
       · exact Nat.cast_pos'.mpr hn
     · positivity
-
-/-- A set of second category (i.e. non-meagre) is nonempty. -/
-lemma nonempty_of_not_IsMeagre {X : Type*} [TopologicalSpace X] {s : Set X} (hs : ¬IsMeagre s) : s.Nonempty := by
-  contrapose! hs
-  simpa [hs] using (IsMeagre.empty)
 
 -- Very ugly proof
 lemma Pn_IsOpen (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : IsOpen (Pn n) := by
@@ -962,25 +1113,14 @@ theorem IsGδ_PStar : IsGδ Pstar := by
   -- simp_rw [Pn, Finset.mem_range, Nat.cast_one, one_div]
   -- refine IsGδ.iInter_of_isOpen ?_
   -- intro i
+  -- apply IsGδ.iInter_of_isOpen
+  -- intro i
+  -- rw [Pn]
+  -- refine Set.Finite.isOpen_sInter ?_ ?_
+  -- · sorry
+  -- · intro t
+  --   sorry
   sorry
-
-/-- In a nonempty Baire space, any dense `Gδ` set is not meagre. -/
-theorem IsGδ_dense_not_meagre {X : Type*} [Nonempty X] [TopologicalSpace X] [BaireSpace X] {s : Set X} (hs : IsGδ s) (hd : Dense s) : ¬ IsMeagre s := by
-  intro h
-  rcases (mem_residual).1 h with ⟨t, hts, htG, hd'⟩
-  rcases (hd.inter_of_Gδ hs htG hd').nonempty with ⟨x, hx₁, hx₂⟩
-  exact (hts hx₂) hx₁
-
-/-- In a nonempty Baire space, a residual (comeagre) set is not meagre. -/
-lemma not_isMeagre_of_mem_residual {X : Type*} [TopologicalSpace X]
-    [BaireSpace X] [Nonempty X] {s : Set X} (hs : s ∈ residual X) :
-    ¬ IsMeagre s := by
-  -- From `mem_residual`, pick a dense Gδ subset `t ⊆ s`.
-  rcases (mem_residual (X := X)).1 hs with ⟨t, ht_sub, htGδ, ht_dense⟩
-  -- Dense Gδ sets aren’t meagre in a nonempty Baire space.
-  -- If `s` were meagre, then so would be `t ⊆ s`, contradiction.
-  intro hs_meagre
-  exact not_isMeagre_of_isGδ_of_dense htGδ ht_dense (hs_meagre.mono ht_sub)
 
 lemma Pstar_notMeagre : ¬ IsMeagre (Pstar) := by
   haveI : Nonempty P_collection' := by
@@ -999,8 +1139,8 @@ def E_set : Set P_collection' :=
 lemma Pstar_sub_E_set : Pstar ⊆ E_set := by
   intro P hP
   have hMem_n : ∀ n, P ∈ Pn n := by
-    intro n
-    simpa [Pstar] using (mem_iInter.mp hP n)
+    sorry
+    -- simpa [Pstar] using (mem_iInter.mp hP n)
   intro u hu
   simp_rw [Pn, P_v_eps', hasThinCover, hSlice] at hMem_n
   have bound : ∀ n > 0, (volume (hSlice (P : Set _) u)).toReal ≤ 100 / (n : ℕ) := by
@@ -1020,6 +1160,7 @@ lemma Pstar_sub_E_set : Pstar ⊆ E_set := by
   apply le_antisymm _ (by positivity)
   apply le_of_forall_ge
   intro ε hε
+
   sorry
 
 theorem thm2_5 : ¬IsMeagre E_set := by
@@ -1031,16 +1172,38 @@ theorem thm2_5 : ¬IsMeagre E_set := by
 
 def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
 
+-- junk?
+-- /-- The embedding `x ↦ ![x, u]` is continuous (hence measurable). -/
+-- def toFin2_u (u : ℝ) (x : ℝ) : Fin 2 → ℝ := ![x, u]
+
+-- lemma continuous_toFin2_u (u : ℝ) : Continuous (toFin2_u u) := by
+--   refine continuous_pi_iff.2 ?_
+--   intro i
+--   fin_cases i
+--   · simpa [toFin2_u] using continuous_id
+--   · simpa [toFin2_u] using continuous_const
+
+-- /-- If `S ⊆ ℝ²` is measurable, then the horizontal slice `{x | ![x,u] ∈ S}` is measurable. -/
+-- lemma measurableSet_hSlice {S : Set (Fin 2 → ℝ)} (hS : MeasurableSet S) (u : ℝ) :
+--     MeasurableSet (hSlice S u) := by
+--   exact hS.preimage (continuous_toFin2_u u).measurable
+
+-- /-- Inner identity: integrating `1` over a horizontal slice equals the 1D volume of the slice. -/
+-- lemma lintegral_indicator_hSlice (S : Set (Fin 2 → ℝ)) (u : ℝ) :
+--     ∫⁻ x, (hSlice S u).indicator (fun _ => (1 : ℝ≥0∞)) x = volume (hSlice S u) := by
+--   apply lintegral_indicator_one
+--   sorry
+
 lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
   intro P hP
   simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
+  sorry
 
   -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
   -- #check MeasureTheory.lintegral_prod_le
   -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
   -- rw [MeasureTheory.Measure.volume_eq_prod]
   -- Fubini argument?
-  sorry
 
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
 theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
@@ -1048,9 +1211,6 @@ theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
   exact thm2_5 (h.mono E_sub_P_zero_vol)
 
 theorem Exists_P0 : P_zero_vol.Nonempty := by exact nonempty_of_not_IsMeagre theorem_2_3
-
-theorem exists_besicovitch_set : ∃ (B : Set (Fin 2 → ℝ)), IsBesicovitch B := by
-  sorry
 
 end
 
