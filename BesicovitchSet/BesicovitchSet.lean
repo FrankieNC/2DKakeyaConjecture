@@ -264,63 +264,6 @@ theorem P_collection'_nonempty : (P_collection').Nonempty := by
     intro v hv
     simpa using rectangle_property_ii v hv
 
--- theorem P_collection'_nonempty' : (P_collection').Nonempty := by
---   let K : NonemptyCompacts (Fin 2 → ℝ) :=
---     ⟨⟨rectangle, by
---         simpa [rectangle] using (isCompact_Icc : IsCompact (Icc ![(-1 : ℝ), 0] ![1, 1]))⟩,
---       by
---         refine ⟨![0,0], ?_⟩
---         simp [rectangle, Pi.le_def, Fin.forall_fin_two]⟩
---   refine ⟨K, ?_⟩
---   refine And.intro ?closed <| And.intro ?subset <| And.intro ?union ?prop2
---   · simpa [rectangle] using (isClosed_Icc : IsClosed (Icc ![(-1 : ℝ), 0] ![1,1]))
---   · intro x hx
---     simpa using hx
---   · refine ⟨Icc ![-1,-1] ![1,1], ?A_sub, ?A_eq⟩
---     · intro p hp
---       exact hp
---     · ext x
---       constructor
---       · intro hx
---         refine mem_iUnion.2 ?_
---         refine ⟨![x 0, x 0], ?_⟩
---         refine mem_iUnion.2 ?_
---         refine ⟨by
---           have hx01 : x 0 ∈ Icc (-1 : ℝ) 1 := by
---             change x ∈ rectangle at hx
---             simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
---           simpa [Pi.le_def, Fin.forall_fin_two], ?_⟩
---         have hx1 : x 1 ∈ Icc (0 : ℝ) 1 := by
---           change x ∈ rectangle at hx
---           simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
---         rcases hx1 with ⟨h0, h1⟩
---         refine ⟨1 - x 1, x 1, by linarith, by linarith, by ring, ?_⟩
---         ext i
---         fin_cases i <;> simp
---         linarith
---       · intro hx
---         rcases mem_iUnion.1 hx with ⟨p, hp⟩
---         rcases mem_iUnion.1 hp with ⟨hpA, hxSeg⟩
---         have hx1 : ![p 0, 0] ∈ rectangle := by
---           simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
---         have hx2 : ![p 1, 1] ∈ rectangle := by
---           simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
---         exact rectangle_convex.segment_subset hx1 hx2 hxSeg
---   · intro v hv
---     refine ⟨0, v, ?x1, ?x2, by ring_nf, ?incl⟩
---     · have : |(0 : ℝ)| ≤ (1 : ℝ) := by simp
---       simp
---     · have hv' : v ∈ Icc (-1 : ℝ) 1 := by
---         have : |v| ≤ (1 : ℝ) := (le_trans hv (by norm_num : (1/2 : ℝ) ≤ 1))
---         simpa [Icc, abs_le] using this
---       exact hv'
---     · have hx1 : ![0, 0] ∈ rectangle := by simp [rectangle, Pi.le_def, Fin.forall_fin_two]
---       have hx2' : ![v, 1] ∈ rectangle := by
---         simp_all [rectangle, Pi.le_def, Fin.forall_fin_two, abs_le]
---         constructor
---         all_goals linarith
---       exact rectangle_convex.segment_subset hx1 hx2'
-
 /-- Any set in `P_collection` is non‑empty: the segment guaranteed by the
 definition already gives a point. -/
 theorem Nonempty_P {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
@@ -382,6 +325,14 @@ theorem hausdorffDist_segment_left_le_dist {E : Type*} [SeminormedAddCommGroup E
     · rw [Real.norm_eq_abs, abs_of_nonneg hb]
       linarith
 
+/-- Moving the right endpoint by distance `d` moves the segment by at most `d` in Hausdorff distance. -/
+lemma hausdorffDist_segment_right_le_dist
+    {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E]
+    {z x y : E} :
+    hausdorffDist (segment ℝ z x) (segment ℝ z y) ≤ dist x y := by
+  simpa [segment_symm, hausdorffDist_comm, dist_comm]
+    using (hausdorffDist_segment_left_le_dist (E := E) (x := x) (y := y) (z := z))
+
 /-- In a real normed vector space, every segment is bounded. -/
 lemma isBounded_segment {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] (x y : E) :
     IsBounded (segment ℝ x y) := by
@@ -393,60 +344,61 @@ lemma isBounded_segment {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ 
   -- Use the standard representation of the segment as that image.
   simpa [segment_eq_image] using hcomp.isBounded
 
-theorem tendsto_hausdorffDist_segments_of_tendsto_endpoints.extracted_1_1 {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → ℝ} (i : ι) :
-    hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) ≤
-      hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ (xn i) y) +
-        hausdorffDist (segment ℝ (xn i) y) (segment ℝ x y) := by
-  apply hausdorffDist_triangle
+/-- Triangle control for segments: compare `(a,b)` to `(c,d)` via the intermediate `(a,d)`. -/
+lemma hausdorffDist_segments_triangle
+    {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E]
+    (a b c d : E) :
+    hausdorffDist (segment ℝ a b) (segment ℝ c d)
+      ≤ hausdorffDist (segment ℝ a b) (segment ℝ a d)
+        + hausdorffDist (segment ℝ a d) (segment ℝ c d) := by
+  -- Hausdorff triangle inequality; segments are nonempty and bounded.
+  refine hausdorffDist_triangle ?_
   refine hausdorffEdist_ne_top_of_nonempty_of_bounded ?_ ?_ ?_ ?_ <;>
   first
   | exact ⟨_, left_mem_segment _ _ _⟩
   | exact isBounded_segment _ _
 
-/-- Segments converge in Hausdorff distance when their endpoints converge). -/
+/-- Endpoint-wise control: the Hausdorff distance between segments is bounded by
+the sum of the distances between corresponding endpoints. -/
+lemma hausdorffDist_segments_le_endpoints
+    {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E]
+    (a b a' b' : E) :
+    hausdorffDist (segment ℝ a b) (segment ℝ a' b') ≤ dist a a' + dist b b' := by
+  -- Triangle via `(a, b')`.
+  have htri := hausdorffDist_segments_triangle (a) (b) (a') (b')
+  -- First leg: move **right** endpoint `b → b'` with left fixed `a`.
+  have h₁ : hausdorffDist (segment ℝ a b) (segment ℝ a b') ≤ dist b b' :=
+    hausdorffDist_segment_right_le_dist (z := a) (x := b) (y := b')
+  -- Second leg: move **left** endpoint `a → a'` with right fixed `b'`.
+  have h₂ : hausdorffDist (segment ℝ a b') (segment ℝ a' b') ≤ dist a a' :=
+    hausdorffDist_segment_left_le_dist (x := a) (y := a') (z := b')
+  -- Combine and commute the sum to match the target order.
+  exact htri.trans <| by simpa [add_comm] using add_le_add h₁ h₂
+
+/-- If `xn → x` and `yn → y`, then `dist (xn i) x + dist (yn i) y → 0`. -/
+lemma tendsto_sum_of_tendsto_dists_to_zero
+    {ι : Type*} {X : Type*} [PseudoMetricSpace X] {l : Filter ι}
+    {xn yn : ι → X} {x y : X}
+    (hx : Tendsto xn l (𝓝 x)) (hy : Tendsto yn l (𝓝 y)) :
+    Tendsto (fun i ↦ dist (xn i) x + dist (yn i) y) l (𝓝 0) := by
+  have hx0 : Tendsto (fun i ↦ dist (xn i) x) l (𝓝 0) :=
+    (tendsto_iff_dist_tendsto_zero).1 hx
+  have hy0 : Tendsto (fun i ↦ dist (yn i) y) l (𝓝 0) :=
+    (tendsto_iff_dist_tendsto_zero).1 hy
+  simpa using hx0.add hy0
+
+/-- Segments converge in Hausdorff distance when their endpoints converge. -/
 theorem tendsto_hausdorffDist_segments_of_tendsto_endpoints
     {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → ℝ} {l : Filter ι}
     (hx : Tendsto xn l (𝓝 x)) (hy : Tendsto yn l (𝓝 y)) :
     Tendsto (fun i ↦ hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y)) l (𝓝 0) := by
-
-  have htri :
-    ∀ i, hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) ≤
-      hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ (xn i) y)
-      + hausdorffDist (segment ℝ (xn i) y) (segment ℝ x y) := by
-
+  -- Pointwise bound by the sum of endpoint distances.
+  have hbound : ∀ i, hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) ≤ dist (xn i) x + dist (yn i) y := by
     intro i
-    refine hausdorffDist_triangle ?_
-    apply hausdorffEdist_ne_top_of_nonempty_of_bounded
-    · exact ⟨_, left_mem_segment _ _ _⟩
-    · exact ⟨_, left_mem_segment _ _ _⟩
-    · exact isBounded_segment _ _
-    · exact isBounded_segment _ _
-  have hA :
-      ∀ i, hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ (xn i) y) ≤ dist (yn i) y := by
-    intro i
-    simpa [segment_symm, hausdorffDist_comm] using (hausdorffDist_segment_left_le_dist (E := Fin 2 → ℝ) (x := yn i) (y := y) (z := xn i))
-
-  have hB :
-      ∀ i, hausdorffDist (segment ℝ (xn i) y) (segment ℝ x y) ≤ dist (xn i) x := by
-    intro i
-    simpa using (hausdorffDist_segment_left_le_dist (E := Fin 2 → ℝ) (x := xn i) (y := x) (z := y))
-
-  have hbound :
-      ∀ i, hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) ≤ dist (yn i) y + dist (xn i) x := by
-    intro i
-    exact (htri i).trans (add_le_add (hA i) (hB i))
-
-  have hnonneg : ∀ i, 0 ≤ hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) := by
-    intro i
-    exact hausdorffDist_nonneg
-
-  have hx0 : Tendsto (fun i ↦ dist (xn i) x) l (𝓝 0) := (tendsto_iff_dist_tendsto_zero).1 hx
-
-  have hy0 : Tendsto (fun i ↦ dist (yn i) y) l (𝓝 0) := (tendsto_iff_dist_tendsto_zero).1 hy
-
-  have hsum : Tendsto (fun i ↦ dist (yn i) y + dist (xn i) x) l (𝓝 0) := by simpa using hy0.add hx0
-
-  exact squeeze_zero (fun i ↦ hnonneg i) hbound hsum
+    simpa using (hausdorffDist_segments_le_endpoints (a := xn i) (b := yn i) (a' := x) (b' := y))
+  -- The upper bound tends to `0`, hence the Hausdorff distance does by squeezing.
+  refine squeeze_zero (fun _ => hausdorffDist_nonneg) hbound ?_
+  simpa using tendsto_sum_of_tendsto_dists_to_zero hx hy
 
 lemma isCompact_segment01 (a b : ℝ) :
     IsCompact (segment01 a b) := by
@@ -459,39 +411,32 @@ lemma isCompact_segment01 (a b : ℝ) :
 /-- The Hausdorff extended distance between two `segment01`s is finite. -/
 lemma hausdorffEdist_ne_top_segment01 (a b a' b' : ℝ) :
     EMetric.hausdorffEdist (segment01 a b) (segment01 a' b') ≠ ⊤ := by
-  have Lne : (segment01 a  b  : Set (Fin 2 → ℝ)).Nonempty :=
+  -- Each `segment01` is nonempty: it contains its left endpoint.
+  have Lne : (segment01 a  b).Nonempty :=
     ⟨![a, 0], by simpa [segment01] using left_mem_segment ℝ ![a,0] ![b,1]⟩
-  have Rne : (segment01 a' b' : Set (Fin 2 → ℝ)).Nonempty :=
+  have Rne : (segment01 a' b').Nonempty :=
     ⟨![a',0], by simpa [segment01] using left_mem_segment ℝ ![a',0] ![b',1]⟩
-  have Lbd : IsBounded (segment01 a b : Set (Fin 2 → ℝ)) := (isCompact_segment01 a b).isBounded
-  have Rbd : IsBounded (segment01 a' b' : Set (Fin 2 → ℝ)) := (isCompact_segment01 a' b').isBounded
+  -- Each `segment01` is bounded (indeed compact): use the compact image of `[0,1]`.
+  have Lbd : IsBounded (segment01 a b) := (isCompact_segment01 a b).isBounded
+  have Rbd : IsBounded (segment01 a' b') := (isCompact_segment01 a' b').isBounded
+  -- Finite Hausdorff *e-distance* holds for nonempty, bounded sets.
   exact hausdorffEdist_ne_top_of_nonempty_of_bounded Lne Rne Lbd Rbd
 
 /-- If `L,T` are `segment01`s, any `y ∈ L` has a point on `T` within the Hausdorff distance. -/
 lemma exists_point_on_segment01_within_HD
     {a b a' b' : ℝ} {y : Fin 2 → ℝ}
-    (hy : y ∈ (segment01 a b : Set (Fin 2 → ℝ))) :
-    ∃ t ∈ (segment01 a' b' : Set (Fin 2 → ℝ)),
-      dist t y ≤ hausdorffDist (segment01 a b) (segment01 a' b') := by
+    (hy : y ∈ (segment01 a b)) :
+    ∃ t ∈ (segment01 a' b'), dist t y ≤ hausdorffDist (segment01 a b) (segment01 a' b') := by
   -- choose a minimiser on the compact target segment
-  obtain ⟨t, ht_mem, ht_eq⟩ :=
-    (isCompact_segment01 a' b').exists_infDist_eq_dist
-      (by refine ⟨![a',0], ?_⟩; simpa [segment01] using left_mem_segment ℝ ![a',0] ![b',1])
-      y
+  obtain ⟨t, ht_mem, ht_eq⟩ := (isCompact_segment01 a' b').exists_infDist_eq_dist
+    (by refine ⟨![a',0], ?_⟩; simpa [segment01] using left_mem_segment ℝ ![a',0] ![b',1]) y
   -- compare infDist with HD (finiteness from the previous lemma)
-  have hfin :
-      EMetric.hausdorffEdist
-        (segment01 a b : Set (Fin 2 → ℝ))
-        (segment01 a' b' : Set (Fin 2 → ℝ)) ≠ ⊤ :=
+  have hfin : EMetric.hausdorffEdist (segment01 a b) (segment01 a' b') ≠ ⊤ :=
     hausdorffEdist_ne_top_segment01 a b a' b'
-  have h_le :
-      Metric.infDist y (segment01 a' b' : Set (Fin 2 → ℝ))
-        ≤ hausdorffDist (segment01 a b) (segment01 a' b') :=
-    Metric.infDist_le_hausdorffDist_of_mem
-      (x := y) (s := (segment01 a b : Set _))
-      (t := (segment01 a' b' : Set _)) hy hfin
+  have h_le : infDist y (segment01 a' b' : Set (Fin 2 → ℝ)) ≤ hausdorffDist (segment01 a b) (segment01 a' b') :=
+    infDist_le_hausdorffDist_of_mem (x := y) (s := segment01 a b) (t := segment01 a' b') hy hfin
   -- turn infDist into a genuine distance via the minimiser `t`
-  have : dist t y = Metric.infDist y (segment01 a' b' : Set _) := by
+  have : dist t y = infDist y (segment01 a' b') := by
     simpa [dist_comm, eq_comm] using ht_eq
   exact ⟨t, ht_mem, by simpa [this] using h_le⟩
 
@@ -846,10 +791,12 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
   exact ⟨h_closed, h_sub, h_union, h_forall⟩
 
--- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
-lemma P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
+#exit
 
-lemma P_col'_BaireSpace [CompleteSpace P_collection'] : BaireSpace P_collection' := BaireSpace.of_pseudoEMetricSpace_completeSpace
+-- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
+theorem P_col'_CompleteSpace : CompleteSpace P_collection' := IsClosed.completeSpace_coe P_col'_IsClosed
+
+theorem P_col'_BaireSpace [CompleteSpace P_collection'] : BaireSpace P_collection' := BaireSpace.of_pseudoEMetricSpace_completeSpace
 
 noncomputable section
 
