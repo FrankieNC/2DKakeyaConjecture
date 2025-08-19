@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2025 Yes. All rights reserved.
+Copyright (c) 2025 Francesco Nishanil Chotuck. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Francesco Nishanil Chotuck, Yuming Guo, Bhavik Mehta
+Authors: Francesco Nishanil Chotuck, Bhavik Mehta
 -/
 
 import Mathlib
@@ -10,9 +10,7 @@ set_option maxHeartbeats 300000
 
 namespace Besicovitch
 
-open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory MetricSpace ENNReal NNReal
-
--- Formalise the entirety of Section 2. Section 4 is nonsense
+open Set Real Topology Metric Bornology TopologicalSpace MeasureTheory MetricSpace ENNReal NNReal Filter
 
 section
 
@@ -28,17 +26,29 @@ lemma univ_isKakeya : IsKakeya (Set.univ : Set E) := by simp [IsKakeya]
 
 /-- If `s` is Kakeya and `s ⊆ t`, then `t` is Kakeya. -/
 theorem IsKakeya_subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
+   -- To show `t` is Kakeya, fix an arbitrary unit direction `v`.
   intro v hv
+  -- From the Kakeya property of `s`, get a base point `x` such that the unit segment
+  -- in direction `v` starting at `x` is contained in `s`.
   rcases h v hv with ⟨x, hx⟩
+  -- Since `s ⊆ t`, that same segment is also contained in `t`.
   exact ⟨x, hx.trans hs⟩
 
 /-- The closed unit ball is Kakeya. -/
 theorem IsKakeya_ball : IsKakeya (closedBall (0 : E) 1) := by
+  -- Fix a unit direction `v`.
   intro v hv
+  -- Choose the base point `x := -v`, so the segment is from `-v` to `0`.
   use -v
+  -- Let `y` be any point on the segment; we must show `y ∈ closedBall 0 1`.
   intro y hy
   calc
+    -- Turn distance into a norm difference.
     dist y 0 = ‖y - 0‖ := by simp
+    -- A point on the segment from `0` to `-v` cannot be farther from `0`
+    -- than the endpoint `-v` is. We massage `hy` to that exact form:
+    --   1) simplify `(-v) + v = 0` so `hy : y ∈ segment ℝ (-v) 0`
+    --   2) use symmetry to view `hy : y ∈ segment ℝ 0 (-v)`
     _ ≤ ‖(-v) - 0‖ := by
       apply norm_sub_le_of_mem_segment
       simp only [neg_add_cancel] at hy
@@ -49,8 +59,12 @@ theorem IsKakeya_ball : IsKakeya (closedBall (0 : E) 1) := by
 
 /-- In a nontrivial normed space, any Kakeya set is nonempty. -/
 theorem IsKakeya.nonempty [Nontrivial E] {s : Set E} (h : IsKakeya s) : s.Nonempty := by
+  -- Choose a unit vector `v` (possible since the space is nontrivial).
   obtain ⟨v, hv_norm⟩ := exists_norm_eq E zero_le_one
+  -- By the Kakeya property of `s`, there exists a base point `y` such that
+  -- the segment from `y` to `y + v` is contained in `s`.
   rcases h v hv_norm with ⟨y, hy⟩
+  -- The left endpoint `y` belongs to that segment, hence `y ∈ s`.
   exact ⟨y, hy (left_mem_segment ..)⟩
 
 /--
@@ -60,57 +74,56 @@ a segment for all vectors with norm at most 1, rather than exactly 1.
 theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
     IsKakeya s ↔ ∀ v : E, ‖v‖ ≤ 1 → ∃ x : E, segment ℝ x (x + v) ⊆ s := by
   constructor
-  -- First, prove: IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x+v ⊆ s
+  -- First, we prove: `IsKakeya s → ∀ v, ‖v‖ ≤ 1 → ∃ x, segment x x + v ⊆ s`
   · intro h_kakeya v hv
-    -- Case: v = 0
+    -- Case: `v = 0`
     by_cases h₀ : v = 0
     · simpa [h₀] using h_kakeya.nonempty
-    -- Case: v ≠ 0
-    · set u := ‖v‖⁻¹ • v with hu -- rescale v to a unit vector u
+    -- Case: `v ≠ 0`
+    · set u := ‖v‖⁻¹ • v with hu -- rescale `v` to a unit vector `u`
       have h₁ : ‖v‖ ≠ 0 := by
         contrapose! h₀
         rw [norm_eq_zero] at h₀
         exact h₀
-      -- Now u has norm 1
+      -- Now `u` has norm 1
       have h₂ : ‖u‖ = 1 := by field_simp [hu, norm_smul]
-      -- By IsKakeya, s contains segment in direction u
+      -- By IsKakeya, `s` contains segment in direction `u`
       obtain ⟨x, hx⟩ := h_kakeya u h₂
       use x
-      -- We want to show: segment x x+v ⊆ segment x x+u
-      -- Since v is a scalar multiple of u, both segments lie along same ray
+      -- We want to show: `segment x x + v ⊆ segment x x + u`
+      -- Since `v` is a scalar multiple of `u`, both segments lie along same ray
       have h₃ : segment ℝ x (x + v) ⊆ segment ℝ x (x + u) := by
         apply (convex_segment _ _).segment_subset (left_mem_segment _ _ _)
         rw [segment_eq_image']
         exact ⟨‖v‖, by simp [*]⟩
       -- Apply inclusion of segments to conclude result
       exact h₃.trans hx
-  -- Converse: ∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s
+  -- Converse: `∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s`
   · intro h_segment v hv
     exact h_segment v hv.le
 
-/--
-A Besicovitch set in `ℝⁿ` is a Kakeya set of Lebesgue measure zero.
--/
+/-- A Besicovitch set in `ℝⁿ` is a Kakeya set of Lebesgue measure zero. -/
 def IsBesicovitch {n : ℕ} (s : Set (Fin n → ℝ)) : Prop := IsKakeya s ∧ volume s = 0
 
 end
 
 section
 
-/-- TO DO -/
+/-- The closed rectangle `[-1,1] × [0,1] ⊆ ℝ²`, written in coordinates for `Fin 2 → ℝ`. -/
 def rectangle : Set (Fin 2 → ℝ) := Icc ![-1, 0] ![1,1]
 
-lemma rectangle_IsBounded : IsBounded rectangle := by simp_rw [rectangle, isBounded_Icc]
+lemma rectangle_IsBounded : IsBounded rectangle := by simp [rectangle, isBounded_Icc]
 
-lemma rectangle_convex : Convex ℝ rectangle := by simp_rw [rectangle, convex_Icc]
+lemma rectangle_isClosed : IsClosed rectangle := by
+  simpa [rectangle] using (isClosed_Icc : IsClosed (Icc ![(-1 : ℝ), 0] ![1, 1]))
 
-/-- TO DO -/
+lemma rectangle_convex : Convex ℝ rectangle := by simp [rectangle, convex_Icc]
+
+/-- The line segment in `ℝ²` from `(x₁, 0)` to `(x₂, 1)`. -/
 def segment01 (x₁ x₂ : ℝ) : Set (Fin 2 → ℝ) :=
   segment ℝ ![x₁, 0] ![x₂, 1]
 
-lemma segment01_eq (x₀ x₁ : ℝ) : segment01 x₀ x₁ = segment ℝ ![x₀,0] ![x₁,1] := rfl
-
-/-- The collection 𝒫 of subsets `P ⊆ rectangle` satisfying
+/-- The collection `𝒫` of subsets `P ⊆ rectangle` satisfying
     (i) “union of those segments’’ and (ii) the spanning condition. -/
 def P_collection : Set (Set (Fin 2 → ℝ)) :=
   { P | IsClosed P ∧ P ⊆ rectangle ∧
@@ -132,62 +145,181 @@ def P_collection' : Set (NonemptyCompacts (Fin 2 → ℝ)) :=
         ∃ x₁ x₂ : ℝ, x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧
           x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P) }
 
-theorem P_collection'_nonempty : (P_collection').Nonempty := by
-  let K : NonemptyCompacts (Fin 2 → ℝ) :=
-    ⟨⟨rectangle, by
-        simpa [rectangle] using (isCompact_Icc : IsCompact (Icc ![(-1 : ℝ), 0] ![1, 1]))⟩,
-      by
-        refine ⟨![0,0], ?_⟩
-        simp [rectangle, Pi.le_def, Fin.forall_fin_two]⟩
-  refine ⟨K, ?_⟩
-  refine And.intro ?closed <| And.intro ?subset <| And.intro ?union ?prop2
-  · simpa [rectangle] using (isClosed_Icc : IsClosed (Icc ![(-1 : ℝ), 0] ![1,1]))
-  · intro x hx
-    simpa using hx
-  · refine ⟨Icc ![-1,-1] ![1,1], ?A_sub, ?A_eq⟩
-    · intro p hp
-      exact hp
-    · ext x
-      constructor
-      · intro hx
-        refine mem_iUnion.2 ?_
-        refine ⟨![x 0, x 0], ?_⟩
-        refine mem_iUnion.2 ?_
-        refine ⟨by
-          have hx01 : x 0 ∈ Icc (-1 : ℝ) 1 := by
-            change x ∈ rectangle at hx
-            simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
-          simpa [Pi.le_def, Fin.forall_fin_two], ?_⟩
-        have hx1 : x 1 ∈ Icc (0 : ℝ) 1 := by
-          change x ∈ rectangle at hx
-          simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
-        rcases hx1 with ⟨h0, h1⟩
-        refine ⟨1 - x 1, x 1, by linarith, by linarith, by ring, ?_⟩
-        ext i
-        fin_cases i <;> simp
-        linarith
-      · intro hx
-        rcases mem_iUnion.1 hx with ⟨p, hp⟩
-        rcases mem_iUnion.1 hp with ⟨hpA, hxSeg⟩
-        have hx1 : ![p 0, 0] ∈ rectangle := by
-          simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
-        have hx2 : ![p 1, 1] ∈ rectangle := by
-          simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
-        exact rectangle_convex.segment_subset hx1 hx2 hxSeg
-  · intro v hv
-    refine ⟨0, v, ?x1, ?x2, by ring_nf, ?incl⟩
-    · have : |(0 : ℝ)| ≤ (1 : ℝ) := by simp
-      simp
-    · have hv' : v ∈ Icc (-1 : ℝ) 1 := by
+/-- A convenient compact witness in `𝒫'`: the whole rectangle as a
+`NonemptyCompacts` together with the obvious interior point `(0,0)`. -/
+def Krect : NonemptyCompacts (Fin 2 → ℝ) :=
+  ⟨⟨rectangle, by
+    -- `rectangle` is a product of closed intervals, hence compact.
+    simpa [rectangle] using (isCompact_Icc : IsCompact (Icc ![(-1 : ℝ), 0] ![1, 1]))⟩,
+    -- The point `(0,0)` lies in the rectangle.
+    by refine ⟨![0,0], ?_⟩; simp [rectangle, Pi.le_def, Fin.forall_fin_two]⟩
+
+/-- Endpoints `![a,0]` and `![b,1]` of our standard segments lie in `rectangle`
+whenever `a,b ∈ [-1,1]`. -/
+lemma endpoints_mem_rectangle {a b : ℝ} (ha : a ∈ Icc (-1 : ℝ) 1) (hb : b ∈ Icc (-1 : ℝ) 1) :
+    ![a, 0] ∈ rectangle ∧ ![b, 1] ∈ rectangle := by
+  simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+
+/-- Every point of the rectangle lies on some segment of the form
+`segment01 (p 0) (p 1)` with `p ∈ [-1,1]×[-1,1]`.  (We take the vertical
+segment through the `x`–coordinate.) -/
+lemma rectangle_subset_Union_segments :
+    rectangle ⊆ ⋃ (p ∈ Icc ![-1,-1] ![1,1]), segment01 (p 0) (p 1) := by
+  intro x hx
+  -- Take the vertical segment at `x 0`, i.e. `p := ![x 0, x 0]`.
+  refine mem_iUnion.2 ?_
+  refine ⟨![x 0, x 0], ?_⟩
+  refine mem_iUnion.2 ?_
+  refine ⟨?px_mem, ?x_on_segment⟩
+  · -- `p` is in the parameter rectangle `[-1,1] × [-1,1]`.
+    have hx0 : x 0 ∈ Icc (-1 : ℝ) 1 := by
+      change x ∈ rectangle at hx
+      simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+    simpa [Pi.le_def, Fin.forall_fin_two] using And.intro hx0 hx0
+  · -- Write `x` as a convex combination of the endpoints with weights `1 - x 1` and `x 1`.
+    have hx1 : x 1 ∈ Icc (0 : ℝ) 1 := by
+      change x ∈ rectangle at hx
+      simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+    rcases hx1 with ⟨h0, h1⟩
+    refine ?_  -- show: `x ∈ segment01 (x 0) (x 0)`
+    -- With coefficients `b = 1 - x 1`, `c = x 1`.
+    refine ⟨1 - x 1, x 1, by linarith, by linarith, by ring, ?_⟩
+    -- Evaluate the affine combination equals `x`.
+    ext i
+    fin_cases i <;> simp
+    linarith
+
+/-- Each such segment is contained in the rectangle: the parameter
+points are in `[-1,1]×[-1,1]`, the rectangle is convex. -/
+lemma Union_segments_subset_rectangle :
+    (⋃ (p ∈ Icc ![-1,-1] ![1,1]), segment01 (p 0) (p 1)) ⊆ rectangle := by
+  intro x hx
+  rcases mem_iUnion.1 hx with ⟨p, hp⟩
+  rcases mem_iUnion.1 hp with ⟨hpA, hxSeg⟩
+  -- From `p ∈ Icc ![-1,-1] ![1,1]` get coordinatewise bounds on `p 0` and `p 1`.
+  have hp_bounds : ((![(-1 : ℝ), -1] : Fin 2 → ℝ) ≤ p) ∧ (p ≤ ![1, 1]) := by
+    simpa [Icc, Pi.le_def, Fin.forall_fin_two] using hpA
+  have ha : p 0 ∈ Icc (-1 : ℝ) 1 :=
+    ⟨by simpa using hp_bounds.1 0, by simpa using hp_bounds.2 0⟩
+  have hb : p 1 ∈ Icc (-1 : ℝ) 1 :=
+    ⟨by simpa using hp_bounds.1 1, by simpa using hp_bounds.2 1⟩
+  -- Endpoints belong to the rectangle; convexity gives the whole segment.
+  obtain ⟨hL, hR⟩ := endpoints_mem_rectangle ha hb
+  exact rectangle_convex.segment_subset hL hR hxSeg
+
+
+/-- The rectangle is exactly the union of all standard segments `segment01 (p 0) (p 1)`
+with `p ∈ [-1,1]×[-1,1]`. -/
+lemma rectangle_Union_segments :
+    rectangle = ⋃ (p ∈ Icc ![-1,-1] ![1,1]), segment01 (p 0) (p 1) := by
+  ext x
+  constructor
+  all_goals intro hx
+  · -- `x ∈ rectangle` implies `x` belongs to the union of segments.
+    exact rectangle_subset_Union_segments hx
+  · -- `x` in the union of segments implies `x ∈ rectangle`.
+    exact Union_segments_subset_rectangle hx
+
+/-- Spanning property (ii) for the rectangle: for any `|v| ≤ 1/2`, the segment
+from `(0,0)` to `(v,1)` lies inside the rectangle. -/
+lemma rectangle_property_ii :
+    ∀ v : ℝ, |v| ≤ (1/2 : ℝ) →
+      ∃ x₁ x₂ : ℝ, x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧
+        x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ (rectangle : Set (Fin 2 → ℝ)) := by
+  intro v hv
+  refine ⟨0, v, ?x1, ?x2, by ring_nf, ?incl⟩
+  · -- `0 ∈ [-1,1]`
+    simp
+  · -- `|v| ≤ 1/2` implies `v ∈ [-1,1]`.
+    have : |v| ≤ (1 : ℝ) := (le_trans hv (by norm_num : (1/2 : ℝ) ≤ 1))
+    simpa [Icc, abs_le] using this
+  · -- The segment from `(0,0)` to `(v,1)` is inside the rectangle by convexity.
+    have hL : ![0, 0] ∈ rectangle := by
+      simp [rectangle, Pi.le_def, Fin.forall_fin_two]
+    have hR : ![v, 1] ∈ rectangle := by
+      -- `x = v` is in `[-1,1]` by the bound above.
+      have hv' : v ∈ Icc (-1 : ℝ) 1 := by
         have : |v| ≤ (1 : ℝ) := (le_trans hv (by norm_num : (1/2 : ℝ) ≤ 1))
         simpa [Icc, abs_le] using this
-      exact hv'
-    · have hx1 : ![0, 0] ∈ rectangle := by simp [rectangle, Pi.le_def, Fin.forall_fin_two]
-      have hx2' : ![v, 1] ∈ rectangle := by
-        simp_all [rectangle, Pi.le_def, Fin.forall_fin_two, abs_le]
-        constructor
-        all_goals linarith
-      exact rectangle_convex.segment_subset hx1 hx2'
+      simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+    exact rectangle_convex.segment_subset hL hR
+
+/-- `𝒫` is nonempty: the rectangle itself (as a compact nonempty set) satisfies
+all clauses of the definition. -/
+theorem P_collection'_nonempty : (P_collection').Nonempty := by
+  refine ⟨Krect, ?_⟩
+  refine And.intro ?closed <| And.intro ?subset <| And.intro ?union ?prop2
+  · -- (closedness)
+    simpa using rectangle_isClosed
+  · -- (contained in the rectangle: trivial for the rectangle itself)
+    intro x hx
+    simpa using hx
+  · -- (i) union-of-segments representation
+    refine ⟨Icc ![-1,-1] ![1,1], ?_, ?_⟩
+    · intro p hp
+      exact hp
+    · -- equality from the two inclusions above
+      simpa using rectangle_Union_segments
+  · -- (ii) spanning property for all `|v| ≤ 1/2`
+    intro v hv
+    simpa using rectangle_property_ii v hv
+
+-- theorem P_collection'_nonempty' : (P_collection').Nonempty := by
+--   let K : NonemptyCompacts (Fin 2 → ℝ) :=
+--     ⟨⟨rectangle, by
+--         simpa [rectangle] using (isCompact_Icc : IsCompact (Icc ![(-1 : ℝ), 0] ![1, 1]))⟩,
+--       by
+--         refine ⟨![0,0], ?_⟩
+--         simp [rectangle, Pi.le_def, Fin.forall_fin_two]⟩
+--   refine ⟨K, ?_⟩
+--   refine And.intro ?closed <| And.intro ?subset <| And.intro ?union ?prop2
+--   · simpa [rectangle] using (isClosed_Icc : IsClosed (Icc ![(-1 : ℝ), 0] ![1,1]))
+--   · intro x hx
+--     simpa using hx
+--   · refine ⟨Icc ![-1,-1] ![1,1], ?A_sub, ?A_eq⟩
+--     · intro p hp
+--       exact hp
+--     · ext x
+--       constructor
+--       · intro hx
+--         refine mem_iUnion.2 ?_
+--         refine ⟨![x 0, x 0], ?_⟩
+--         refine mem_iUnion.2 ?_
+--         refine ⟨by
+--           have hx01 : x 0 ∈ Icc (-1 : ℝ) 1 := by
+--             change x ∈ rectangle at hx
+--             simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+--           simpa [Pi.le_def, Fin.forall_fin_two], ?_⟩
+--         have hx1 : x 1 ∈ Icc (0 : ℝ) 1 := by
+--           change x ∈ rectangle at hx
+--           simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+--         rcases hx1 with ⟨h0, h1⟩
+--         refine ⟨1 - x 1, x 1, by linarith, by linarith, by ring, ?_⟩
+--         ext i
+--         fin_cases i <;> simp
+--         linarith
+--       · intro hx
+--         rcases mem_iUnion.1 hx with ⟨p, hp⟩
+--         rcases mem_iUnion.1 hp with ⟨hpA, hxSeg⟩
+--         have hx1 : ![p 0, 0] ∈ rectangle := by
+--           simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+--         have hx2 : ![p 1, 1] ∈ rectangle := by
+--           simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
+--         exact rectangle_convex.segment_subset hx1 hx2 hxSeg
+--   · intro v hv
+--     refine ⟨0, v, ?x1, ?x2, by ring_nf, ?incl⟩
+--     · have : |(0 : ℝ)| ≤ (1 : ℝ) := by simp
+--       simp
+--     · have hv' : v ∈ Icc (-1 : ℝ) 1 := by
+--         have : |v| ≤ (1 : ℝ) := (le_trans hv (by norm_num : (1/2 : ℝ) ≤ 1))
+--         simpa [Icc, abs_le] using this
+--       exact hv'
+--     · have hx1 : ![0, 0] ∈ rectangle := by simp [rectangle, Pi.le_def, Fin.forall_fin_two]
+--       have hx2' : ![v, 1] ∈ rectangle := by
+--         simp_all [rectangle, Pi.le_def, Fin.forall_fin_two, abs_le]
+--         constructor
+--         all_goals linarith
+--       exact rectangle_convex.segment_subset hx1 hx2'
 
 /-- Any set in `P_collection` is non‑empty: the segment guaranteed by the
 definition already gives a point. -/
@@ -215,8 +347,7 @@ theorem P_collection'_image_eq : (↑) '' P_collection' = P_collection := by
   · intro hP
     exact ⟨⟨⟨P, IsCompact_P hP⟩, Nonempty_P  hP⟩, hP, rfl⟩
 
-open Filter
-
+/-- Equivalent formulation of the second defining property of `𝒫`. -/
 lemma prop_ii_equiv {P : Set (Fin 2 → ℝ)} :
     (∀ (v : ℝ), |v| ≤ (1/2 : ℝ) → ∃ x₁ x₂ : ℝ, x₁ ∈ Icc (-1 : ℝ) 1 ∧ x₂ ∈ Icc (-1 : ℝ) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ P)
     ↔
@@ -229,9 +360,8 @@ lemma prop_ii_equiv {P : Set (Fin 2 → ℝ)} :
   · rcases h v hv with ⟨x, ⟨hx₀, hx₁⟩, hdiff, hP⟩
     exact ⟨x 0, x 1, by all_goals simp_all [Pi.le_def, Fin.forall_fin_two]⟩
 
--- Aaron Liu (Zulip)
--- might call it hausdorffDist_segment_left_le_dist
-theorem thing {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z : E} :
+-- By Aaron Liu (from Zulip)
+theorem hausdorffDist_segment_left_le_dist {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z : E} :
     hausdorffDist (segment ℝ x z) (segment ℝ y z) ≤ dist x y := by
   apply hausdorffDist_le_of_mem_dist
   · apply dist_nonneg
@@ -263,7 +393,7 @@ lemma isBounded_segment {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ 
   -- Use the standard representation of the segment as that image.
   simpa [segment_eq_image] using hcomp.isBounded
 
-theorem thing_both.extracted_1_1 {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → ℝ} (i : ι) :
+theorem tendsto_hausdorffDist_segments_of_tendsto_endpoints.extracted_1_1 {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → ℝ} (i : ι) :
     hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) ≤
       hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ (xn i) y) +
         hausdorffDist (segment ℝ (xn i) y) (segment ℝ x y) := by
@@ -273,7 +403,9 @@ theorem thing_both.extracted_1_1 {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x 
   | exact ⟨_, left_mem_segment _ _ _⟩
   | exact isBounded_segment _ _
 
-theorem thing_both {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → ℝ} {l : Filter ι}
+/-- Segments converge in Hausdorff distance when their endpoints converge). -/
+theorem tendsto_hausdorffDist_segments_of_tendsto_endpoints
+    {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → ℝ} {l : Filter ι}
     (hx : Tendsto xn l (𝓝 x)) (hy : Tendsto yn l (𝓝 y)) :
     Tendsto (fun i ↦ hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y)) l (𝓝 0) := by
 
@@ -292,12 +424,12 @@ theorem thing_both {ι : Type*} {xn yn : ι → Fin 2 → ℝ} {x y : Fin 2 → 
   have hA :
       ∀ i, hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ (xn i) y) ≤ dist (yn i) y := by
     intro i
-    simpa [segment_symm, hausdorffDist_comm] using (thing (E := Fin 2 → ℝ) (x := yn i) (y := y) (z := xn i))
+    simpa [segment_symm, hausdorffDist_comm] using (hausdorffDist_segment_left_le_dist (E := Fin 2 → ℝ) (x := yn i) (y := y) (z := xn i))
 
   have hB :
       ∀ i, hausdorffDist (segment ℝ (xn i) y) (segment ℝ x y) ≤ dist (xn i) x := by
     intro i
-    simpa using (thing (E := Fin 2 → ℝ) (x := xn i) (y := x) (z := y))
+    simpa using (hausdorffDist_segment_left_le_dist (E := Fin 2 → ℝ) (x := xn i) (y := x) (z := y))
 
   have hbound :
       ∀ i, hausdorffDist (segment ℝ (xn i) (yn i)) (segment ℝ x y) ≤ dist (yn i) y + dist (xn i) x := by
@@ -495,7 +627,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
         exact hy
 
       have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L) atTop (𝓝 0) := by
-        apply thing_both
+        apply tendsto_hausdorffDist_segments_of_tendsto_endpoints
         all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
       observe h_L_compact : IsCompact L
       refine mem_iUnion.2 ?_
@@ -663,7 +795,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
         intro j
         exact h_seg_n_P j (hqS j)
       have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x (φ j) 0) (x (φ j) 1)) L) atTop (𝓝 0) := by
-        apply thing_both
+        apply tendsto_hausdorffDist_segments_of_tendsto_endpoints
         all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
 
       have hHD_LS : Tendsto (fun j => hausdorffDist L (S j)) atTop (𝓝 0) := by
@@ -745,6 +877,48 @@ def hasThinCover (P : Set (Fin 2 → ℝ)) (v ε : ℝ) : Prop :=
       -- and the total horizontal length is < 100 ε
       (∀ y, y ∈ window v ε → (volume (hSlice (⋃ r ∈ R, (r : Set _)) y)).toReal < 100 * ε)
 
+lemma hasThinCover_singleton (v ε : ℝ) (x : Fin 2 → ℝ) (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+    hasThinCover ({x} : Set (Fin 2 → ℝ)) v ε := by
+  let R : Finset (Set (Fin 2 → ℝ)) :=
+    {axisRect (x 0) (x 0) (x 1) (x 1)}
+  refine ⟨R, ?rects, ?cover, ?length⟩
+  · intro r hr
+    rcases Finset.mem_singleton.mp hr with rfl
+    exact ⟨x 0, x 0, x 1, x 1, rfl⟩
+  · intro y hy t ht
+    -- ht: (![t,y]) ∈ {x}  ⇒  t = x 0 and y = x 1
+    have hxy : (![t, y] : Fin 2 → ℝ) = x := by
+      simpa [hSlice] using ht
+    have ht0 : t = x 0 := by simpa using congrArg (fun p => p 0) hxy
+    have hy1 : y = x 1 := by simpa using congrArg (fun p => p 1) hxy
+    -- show t belongs to the slice of our rectangle at y
+    -- the big union over a singleton is just that set
+    have : hSlice (⋃ r ∈ R, (r : Set _)) y = hSlice (axisRect (x 0) (x 0) (x 1) (x 1)) y := by
+      simp [R]
+    -- finish by unfolding `hSlice`/`axisRect`
+    -- simpa [this, hSlice, axisRect, ht0, hy1]
+    simp only [hSlice, Nat.succ_eq_add_one, Nat.reduceAdd, hy1, Fin.isValue, mem_iUnion,
+      exists_prop, ht0, mem_setOf_eq]
+    sorry
+  · intro y hy
+    -- reduce the union over the singleton R
+    have : hSlice (⋃ r ∈ R, (r : Set _)) y
+          = {t : ℝ | t ∈ Icc (x 0) (x 0) ∧ y ∈ Icc (x 1) (x 1)} := by
+      simp [R, hSlice, axisRect]
+    -- the slice is either ∅ (if y ≠ x 1) or {x 0}; in both cases volume = 0
+    have hvol : volume (hSlice (⋃ r ∈ R, (r : Set _)) y) = 0 := by
+      by_cases hy' : y = x 1
+      · have : hSlice (⋃ r ∈ R, (r : Set _)) y = {x 0} := by
+          ext t
+          sorry
+        simp [this]
+      · have : hSlice (⋃ r ∈ R, (r : Set _)) y = (∅ : Set ℝ) := by
+          ext t
+          sorry
+        simp [this]
+    have hpos : 0 < 100 * ε := by simp [hε]
+    simpa [hvol] using hpos
+
 /-- The same collection, but as a subset of the Hausdorff–metric
     space `NonemptyCompacts (Fin 2 → ℝ)`. -/
 def P_v_eps' (v ε : ℝ) : Set P_collection' :=
@@ -752,9 +926,16 @@ def P_v_eps' (v ε : ℝ) : Set P_collection' :=
 
 theorem P_v_eps'_nonempty {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     (P_v_eps' v ε).Nonempty := by
-  sorry
+  let K : NonemptyCompacts (Fin 2 → ℝ) := ⟨⟨{![1/2, 1/2]}, isCompact_singleton⟩, fun a ↦ v, by sorry⟩
+  have K_mem : K ∈ (Set.univ : Set (NonemptyCompacts (Fin 2 → ℝ))) := by simp
+  have hcover : hasThinCover ((K : Set (Fin 2 → ℝ))) v ε := by
+    sorry
+    -- hasThinCover_singleton hv₀ hv₁ hε
+  have K_mem_P_col' : K ∈ P_collection' := by
+    sorry
+  exact ⟨⟨K, K_mem_P_col'⟩, by simpa using hcover⟩
 
--- helper: expand an axis-aligned rectangle by η in both directions
+/-- helper: expand an axis-aligned rectangle by η in both directions -/
 def axisRectExpand (η : ℝ) (a b c d : ℝ) : Set (Fin 2 → ℝ) :=
   axisRect (a - η) (b + η) (c - η) (d + η)
 
@@ -857,7 +1038,49 @@ lemma not_isMeagre_of_mem_residual {X : Type*} [TopologicalSpace X]
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+/-- TO DO -/
+def φ' (φ : ℕ → ℝ≥0) (n : ℕ) : ℝ≥0 :=
+  if n = 0 then φ n else min (1 / (n : ℕ)) (φ n)
+
+-- Junk?
+-- lemma φ'_mem_Ioo (φ : ℕ → ℝ≥0) (hφ : ∀ n, φ n ∈ Set.Ioo 0 1) :
+--     ∀ n, φ' φ n ∈ Set.Ioo (0 : ℝ≥0) 1 := by
+--   intro n
+--   by_cases h : n = 0
+--   · subst h
+--     simpa [φ'] using hφ 0
+--   · rcases hφ n with ⟨hpos, hlt1⟩
+--     have hpos' : 0 < 1 / (n : ℕ) := by
+--       sorry
+--     refine ⟨?_, ?_⟩
+--     · sorry
+--     · simpa [φ', h] using (min_lt_iff.2 (Or.inr hlt1))
+
+lemma extra_exists_seq_strictAnti_tendsto (n r : ℕ) :
+    ∃ φ : ℕ → ℝ≥0, StrictAnti φ ∧ (∀ n, φ n ∈ Set.Ioo 0 1) ∧ Tendsto φ atTop (𝓝 0) ∧ (∀ n, r * (φ n) ≤ 1) ∧ (∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) :=  by
+  obtain ⟨φ', h₁φ', h₂φ', h₃φ'⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
+  set φ : ℕ → ℝ≥0 := if n = 0 then φ' else min (1 / n) φ' with hφ
+  use φ
+  by_cases h : n = 0
+  · subst h
+    simp only [↓reduceIte] at hφ
+    sorry
+  · sorry
+-- and to prove that existence you can probably just use the same exists_seq_strictAnti_tendsto' to get phi', then use phi n := if n = 0 then 1 else min (1/n) (phi' n)
+-- #check exists_seq_strictAnti_tendsto
+
+/-- TO DO -/
 def Pn (φ : ℕ → ℝ≥0) (n : ℕ) : Set P_collection' := ⋂ r ∈ Finset.range (n + 1), P_v_eps' ((r : ℝ) * (φ n : ℝ)) (φ n : ℝ)
+
+lemma isOpen_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n))
+    (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1) :
+    IsOpen (Pn φ n) := by
+  unfold Pn
+  refine isOpen_biInter_finset ?_
+  intro r hr
+  exact P_v_eps_open (hv0 r hr) (hv1 r hr) ((hφ n).1)
 
 def Pstar (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n : ℕ, Pn φ (n + 1)
 
@@ -888,37 +1111,80 @@ lemma Pstar_eq_Pstar' (φ : ℕ → ℝ≥0) :
 
 variable [BaireSpace P_collection']
 
-variable {φ : ℕ → ℝ≥0} {n : ℕ} (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+lemma Dense_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n))
+    (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1) :
+    Dense (Pn φ n) := by
+  rw [Pn]
+  apply dense_iInter_of_isOpen
+  all_goals intro i
+  · -- apply P_v_eps_open (v := i * (φ n)) (ε := (φ n)) (hv0 i) (hv1 i)
+    sorry
+  · sorry
+
+variable (φ : ℕ → ℝ≥0) (n : ℕ) (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+  (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1)
 
 -- Is this necessary?
-theorem P_v_eps'_not_meagre {v ε : ℝ} (h0 : 0 ≤ v) (h1 : v ≤ 1) (hε : 0 < ε) :
-    ¬ IsMeagre (P_v_eps' v ε) :=
-  not_isMeagre_of_isOpen (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
+-- theorem P_v_eps'_not_meagre {v ε : ℝ} (h0 : 0 ≤ v) (h1 : v ≤ 1) (hε : 0 < ε) :
+--     ¬ IsMeagre (P_v_eps' v ε) :=
+--   not_isMeagre_of_isOpen (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
 
 /-- `Pstar(φ)` is dense: countable intersection of open dense sets. -/
-lemma Dense_Pstar {φ : ℕ → ℝ≥0} : Dense (Pstar φ) := by
-  sorry
+lemma Dense_Pstar (φ : ℕ → ℝ≥0) (n : ℕ) (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+  (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1)  : Dense (Pstar φ) := by
+  apply dense_sInter_of_isOpen
+  · intro S hS
+    rcases hS with ⟨m, rfl⟩
+    apply isOpen_Pn
+    · exact fun n ↦ h₂φ n
+    · exact fun r a ↦ zero_le (↑r * φ (m + 1))
+    · sorry
+  · exact countable_range fun n ↦ Pn φ (n + 1)
+  · intro S hS
+    rcases hS with ⟨m, rfl⟩
+    apply Dense_Pn
+    · exact fun n ↦ h₂φ n
+    · exact fun r a ↦ zero_le (↑r * φ (m + 1))
+    · sorry
 
 /-- `Pstar(φ)` is a Gδ: countable intersection of open sets. -/
-lemma IsGδ_Pstar : IsGδ (Pstar φ) := by
-  simp_rw [isGδ_iff_eq_iInter_nat]
-  sorry
+lemma IsGδ_Pstar (φ : ℕ → ℝ≥0) (n : ℕ) (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+  (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1) : IsGδ (Pstar φ) := by
+  -- simp_rw [isGδ_iff_eq_iInter_nat]
+  have : ∀ m, IsOpen (Pn φ (m + 1)) := by
+    intro m
+    apply isOpen_Pn -- φ (m + 1)
+    · intro r
+      exact h₂φ r
+    · intro r hr
+      exact zero_le (↑r * φ (m + 1))
+    · intro r hr
+      have hr_le : r ≤ m+1 := Finset.mem_range_succ_iff.mp hr
+      calc
+        (r : ℝ) * φ (m+1) ≤ (m+1 : ℝ) * φ (m+1) := by gcongr; exact_mod_cast hr_le
+        _ ≤ 1 := sorry
+  simpa [Pstar] using IsGδ.iInter_of_isOpen this
 
 theorem Pstar_notMeagre : ¬ IsMeagre (Pstar φ) := by
   haveI : Nonempty P_collection' := by
     rcases P_collection'_nonempty with ⟨P, hP⟩
     exact ⟨P, hP⟩
-  exact not_isMeagre_of_isGδ_of_dense IsGδ_Pstar Dense_Pstar
+  -- exact not_isMeagre_of_isGδ_of_dense (IsGδ_Pstar φ) (Dense_Pstar φ)
+  sorry
 
 def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
 
-lemma Pstar_sub_E_set :
+lemma Pstar_sub_E_set  (φ : ℕ → ℝ≥0) (n : ℕ) (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+  (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1) :
     Pstar φ ⊆ E_set := by
   intro P hP
   have hmem : ∀ m, P ∈ Pn φ (m+1) := by
     intro m
     simpa [Pstar] using (mem_iInter.mp hP m)
   intro u hu
+  have hu01 : u ∈ Icc (0 : ℝ) 1 := by simpa [Icc]
   have hbound : ∀ m, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal < 100 * (φ (m+1) : ℝ) := by
     sorry
   sorry
@@ -935,282 +1201,45 @@ lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
   intro P hP
   simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
   sorry
-
-  -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
-  -- #check MeasureTheory.lintegral_prod_le
-  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
-  -- rw [MeasureTheory.Measure.volume_eq_prod]
-  -- Fubini argument?
-
-/-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
-theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
-  -- exact thm2_5 (Pstar_sub_E_set.mono E_sub_P_zero_vol)
-  sorry
-
-theorem Exists_P0 : P_zero_vol.Nonempty := nonempty_of_not_IsMeagre theorem_2_3
-
-#exit
-
-lemma Dense_Pstar : Dense Pstar := by
-  sorry
-
-lemma IsGδ_Pstar : IsGδ Pstar := by
-  simp_rw [isGδ_iff_eq_iInter_nat]
-  sorry
-
-theorem Pstar_notMeagre : ¬ IsMeagre (Pstar) := by
-  haveI : Nonempty P_collection' := by
-    rcases P_collection'_nonempty with ⟨P, hP⟩
-    exact ⟨P, hP⟩
-  exact IsGδ_dense_not_meagre IsGδ_Pstar Dense_Pstar
-
-def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
-
-lemma Pstar_sub_E_set : Pstar ⊆ E_set := by
-  intro P hP
-  sorry
-  -- have hMem_n : ∀ n ≥ 1, P ∈ Pn n n := by
-  --   intro n
-  --   simpa [Pstar] using (mem_iInter.mp hP n)
-  -- intro u hu
-  -- simp_rw [Pn, P_v_eps', hasThinCover, hSlice] at hMem_n
-  -- have bound : ∀ n > 0, (volume (hSlice (P : Set _) u)).toReal ≤ 100 / (n : ℕ) := by
-  --   intro n hn
-  --   -- this comes from the defining property of it being ≤ 100ε
-  --   simp_rw [hSlice]
-  --   obtain ⟨r, hr, hur⟩ : ∃ r ∈ Finset.range (n + 1), u ∈ window ((r : ℝ) / n) (1 / n) := by
-  --     sorry
-  --   have hPn := (Set.mem_iInter₂.mp (hMem_n n)) r hr
-  --   rcases hPn with ⟨R, _hRaxis, hsub, hvol⟩
-  --   have hmono : (volume {x | ![x, u] ∈ (P : Set (Fin 2 → ℝ))}).toReal ≤ (volume {x | ![x, u] ∈ ⋃ r ∈ R, r}).toReal := by
-  --     -- exact ENNReal.toReal_mono (measure_mono hsub u.toNNReal hur)
-  --     sorry
-  --   have hbound : (volume {x | ![x, u] ∈ ⋃ r ∈ R, r}).toReal ≤ 100 / (n : ℝ) := by
-  --     sorry
-  --   exact hmono.trans hbound
-  -- apply le_antisymm _ (by positivity)
-  -- apply le_of_forall_ge
-  -- intro ε hε
-  -- sorry
-
-theorem thm2_5 : ¬ IsMeagre E_set := by
-  intro h
-  observe : Pstar ⊆ E_set
-  apply IsMeagre.mono at this
-  · simpa [Pstar_notMeagre]
-  · exact h
-
-def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
-
-lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
-  intro P hP
-  simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
-  sorry
-
-  -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
-  -- #check MeasureTheory.lintegral_prod_le
-  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
-  -- rw [MeasureTheory.Measure.volume_eq_prod]
-  -- Fubini argument?
-
-/-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
-theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
-  intro h
-  exact thm2_5 (h.mono E_sub_P_zero_vol)
-
-theorem Exists_P0 : P_zero_vol.Nonempty := by exact nonempty_of_not_IsMeagre theorem_2_3
-
-#exit
-
--- Junk?
-lemma P_r_n_not_meagre (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : ¬ IsMeagre (P_v_eps' (r / n) ((1 : ℕ) / n)) :=  by
-  apply not_isMeagre_of_isOpen
-  · apply P_v_eps_open
-    · positivity
-    · rw [div_le_iff₀, one_mul, Nat.cast_le]
-      · exact hrn
-      · exact Nat.cast_pos'.mpr hn
-    · positivity
-  · apply P_v_eps'_nonempty
-    · positivity
-    · rw [div_le_iff₀, one_mul, Nat.cast_le]
-      · exact hrn
-      · exact Nat.cast_pos'.mpr hn
-    · positivity
-
--- Very ugly proof
-lemma Pn_IsOpen (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : IsOpen (Pn n) := by
-  rw [Pn]
-  apply isOpen_biInter_finset
-  intro k hk
-  simp only [Finset.mem_range] at hk
-  apply P_v_eps_open
-  · exact div_nonneg (Nat.cast_nonneg' k) (Nat.cast_nonneg' n)
-  · rw [div_le_one_iff]
-    constructor
-    constructor
-    · exact Nat.cast_pos'.mpr hn
-    · field_simp
-      exact Nat.le_of_lt_succ hk
-  · simp only [Nat.cast_one, one_div, inv_pos, Nat.cast_pos]
-    exact hn
-
-/-- Each finite layer `P_{n+1}` is open. -/
-lemma Pn_isOpen_succ (n : ℕ) : IsOpen (Pn (n.succ)) := by
-  dsimp [Pn]
-  refine isOpen_biInter_finset ?_
-  intro r hr
-  have hr_le : r ≤ n.succ := Nat.le_of_lt_succ (by simpa [Finset.mem_range] using hr)
-  have hv₀ : 0 ≤ (r : ℝ) / (n.succ : ℝ) :=
-    div_nonneg (by exact_mod_cast Nat.zero_le r) (by exact_mod_cast Nat.zero_le n.succ)
-  have hv₁ : (r : ℝ) / (n.succ : ℝ) ≤ 1 := by
-    have hnpos : (0 : ℝ) < (n.succ : ℝ) := by exact_mod_cast Nat.succ_pos n
-    have : (r : ℝ) ≤ (n.succ : ℝ) := by exact_mod_cast hr_le
-    exact (div_le_one hnpos).2 this
-  have hε : 0 < (1 : ℝ) / (n.succ : ℝ) := by
-    have hnpos : (0 : ℝ) < (n.succ : ℝ) := by exact_mod_cast Nat.succ_pos n
-    simpa [one_div] using inv_pos.mpr hnpos
-  simpa using P_v_eps_open hv₀ hv₁ hε
-
-/-- Therefore `P_{n+1}` is a `Gδ` set. -/
-lemma Pn_isGδ_succ (n : ℕ) : IsGδ (Pn (n.succ)) :=
-  (Pn_isOpen_succ n).isGδ
-
-lemma Dense_Pn (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : Dense (Pn n) := by
-  rw [Pn]
-  refine dense_iInter_of_isOpen ?isOpen ?dense
-  all_goals intro i
-  all_goals dsimp
-  · sorry
-  · sorry
-
-lemma Pn_nonempty (n r : ℕ) (hn : 0 < n) (hrn : r ≤ n) : (Pn n).Nonempty := by
-  simp_rw [Pn]
-
-  -- BY baire ? Intersection of a sequence of dense open sets is nonempty
-  --https://math.stackexchange.com/questions/221423/proving-baires-theorem-the-intersection-of-a-sequence-of-dense-open-subsets-of
-  -- A countable intersection of dense open sets is nonempty.
-  -- https://www.ucl.ac.uk/~ucahad0/3103_handout_7.pdf
-  -- Corollary 7.4
-  sorry
-
--- Easy, the finite intersection of open sets is open, then apply lemma from above
-lemma something1 (n : ℕ) (hn : 0 < n) : ¬ IsMeagre (Pn n) := by
-  exact not_isMeagre_of_isOpen (Pn_IsOpen n (Nat.succ 0) hn hn) (Pn_nonempty n (Nat.succ 0) hn hn)
-
-theorem Dense_Pstar : Dense Pstar := by
-  rw [Pstar]
-  apply dense_iInter_of_isOpen
-  all_goals intro n
-  all_goals rw [Pn]
-  · sorry
-  · sorry
-
-theorem IsGδ_PStar : IsGδ Pstar := by
-    -- isGδ_iInter_of_open (U := fun n : ℕ => Pn (n.succ)) (fun n => Pn_isOpen_succ n)
-  -- apply IsGδ.iInter_of_isOpen ?_
-
-  -- simp_rw [Pn, Finset.mem_range, Nat.cast_one, one_div]
-  -- refine IsGδ.iInter_of_isOpen ?_
-  -- intro i
-  -- apply IsGδ.iInter_of_isOpen
-  -- intro i
-  -- rw [Pn]
-  -- refine Set.Finite.isOpen_sInter ?_ ?_
-  -- · sorry
-  -- · intro t
+  -- simp only [lintegral_const, MeasurableSet.univ, Measure.restrict_apply, univ_inter, one_mul]
+  -- have hP_sub_rect : (P : Set (Fin 2 → ℝ)) ⊆ rectangle := (P.property).2.1
+  -- have hslice_zero : ∀ y : ℝ, volume (hSlice (P : Set (Fin 2 → ℝ)) y) = 0 := by
+  --   intro y
+  --   by_cases hy : y ∈ Icc (0 : ℝ) 1
+  --   · simpa [E_set, mem_setOf_eq] using hP y hy
+  --   · have : hSlice (P : Set (Fin 2 → ℝ)) y = (∅ : Set ℝ) := by
+  --       ext x
+  --       constructor
+  --       · intro hx
+  --         have hxP : (![x, y] : Fin 2 → ℝ) ∈ (P : Set (Fin 2 → ℝ)) := by
+  --           simpa [hSlice] using hx
+  --         have hxRect : (![x, y] : Fin 2 → ℝ) ∈ rectangle := hP_sub_rect hxP
+  --         have : y ∈ Icc (0 : ℝ) 1 := by
+  --           simpa [rectangle, Pi.le_def, Fin.forall_fin_two] using (show (![x, y] : Fin 2 → ℝ) 1 ∈ Icc (0 : ℝ) 1 from
+  --             (by simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]))
+  --         exact (hy this).elim
+  --       · simp
+  --     simp [this]
+  -- have h_prod_bound : volume (P : Set (Fin 2 → ℝ)) ≤ ∫⁻ y : ℝ, volume (hSlice (P : Set (Fin 2 → ℝ)) y) := by
   --   sorry
-  sorry
+  -- have : ∫⁻ y : ℝ, volume (hSlice (P : Set (Fin 2 → ℝ)) y) = 0 := by
+  --   simp [hslice_zero]
+  -- have hle : volume (↑↑P : Set (Fin 2 → ℝ)) ≤ 0 := by
+  --   simpa [this] using h_prod_bound
+  -- exact le_antisymm hle bot_le
 
-lemma Pstar_notMeagre : ¬ IsMeagre (Pstar) := by
-  haveI : Nonempty P_collection' := by
-    rcases P_collection'_nonempty with ⟨P, hP⟩
-    exact ⟨P, hP⟩
-  exact IsGδ_dense_not_meagre IsGδ_PStar Dense_Pstar
-
-/-- The sets `P` in `𝒫` whose horizontal slice at every height `u ∈ [0,1]`
-has Lebesgue measure zero. This is the set denoted `𝓔` in Theorem 2.5. -/
-def E_set : Set P_collection' :=
-  {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
-
--- Maybe i need to show the E set is not empty
--- no, it is handled bby belows
-
-lemma Pstar_sub_E_set : Pstar ⊆ E_set := by
-  intro P hP
-  have hMem_n : ∀ n, P ∈ Pn n := by
-    sorry
-    -- simpa [Pstar] using (mem_iInter.mp hP n)
-  intro u hu
-  simp_rw [Pn, P_v_eps', hasThinCover, hSlice] at hMem_n
-  have bound : ∀ n > 0, (volume (hSlice (P : Set _) u)).toReal ≤ 100 / (n : ℕ) := by
-    intro n hn
-    -- this comes from the defining property of it being ≤ 100ε
-    simp_rw [hSlice]
-    obtain ⟨r, hr, hur⟩ : ∃ r ∈ Finset.range (n + 1), u ∈ window ((r : ℝ) / n) (1 / n) := by
-      sorry
-    have hPn := (Set.mem_iInter₂.mp (hMem_n n)) r hr
-    rcases hPn with ⟨R, _hRaxis, hsub, hvol⟩
-    have hmono : (volume {x | ![x, u] ∈ (P : Set (Fin 2 → ℝ))}).toReal ≤ (volume {x | ![x, u] ∈ ⋃ r ∈ R, r}).toReal := by
-      -- exact ENNReal.toReal_mono (measure_mono hsub u.toNNReal hur)
-      sorry
-    have hbound : (volume {x | ![x, u] ∈ ⋃ r ∈ R, r}).toReal ≤ 100 / (n : ℝ) := by
-      sorry
-    exact hmono.trans hbound
-  apply le_antisymm _ (by positivity)
-  apply le_of_forall_ge
-  intro ε hε
-
-  sorry
-
-theorem thm2_5 : ¬IsMeagre E_set := by
-  intro h
-  observe : Pstar ⊆ E_set
-  apply IsMeagre.mono at this
-  · simpa [Pstar_notMeagre]
-  · exact h
-
-def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
-
--- junk?
--- /-- The embedding `x ↦ ![x, u]` is continuous (hence measurable). -/
--- def toFin2_u (u : ℝ) (x : ℝ) : Fin 2 → ℝ := ![x, u]
-
--- lemma continuous_toFin2_u (u : ℝ) : Continuous (toFin2_u u) := by
---   refine continuous_pi_iff.2 ?_
---   intro i
---   fin_cases i
---   · simpa [toFin2_u] using continuous_id
---   · simpa [toFin2_u] using continuous_const
-
--- /-- If `S ⊆ ℝ²` is measurable, then the horizontal slice `{x | ![x,u] ∈ S}` is measurable. -/
--- lemma measurableSet_hSlice {S : Set (Fin 2 → ℝ)} (hS : MeasurableSet S) (u : ℝ) :
---     MeasurableSet (hSlice S u) := by
---   exact hS.preimage (continuous_toFin2_u u).measurable
-
--- /-- Inner identity: integrating `1` over a horizontal slice equals the 1D volume of the slice. -/
--- lemma lintegral_indicator_hSlice (S : Set (Fin 2 → ℝ)) (u : ℝ) :
---     ∫⁻ x, (hSlice S u).indicator (fun _ => (1 : ℝ≥0∞)) x = volume (hSlice S u) := by
---   apply lintegral_indicator_one
---   sorry
-
-lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
-  intro P hP
-  simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
-  sorry
-
-  -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
   -- #check MeasureTheory.lintegral_prod_le
+  -- #check MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ)
   -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
   -- rw [MeasureTheory.Measure.volume_eq_prod]
   -- Fubini argument?
 
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
-theorem theorem_2_3 : ¬ IsMeagre P_zero_vol := by
+theorem theorem_2_3 (φ : ℕ → ℝ≥0) : ¬ IsMeagre P_zero_vol := by
   intro h
-  exact thm2_5 (h.mono E_sub_P_zero_vol)
+  exact (thm2_5 φ (Pstar_sub_E_set φ)) (h.mono E_sub_P_zero_vol)
 
-theorem Exists_P0 : P_zero_vol.Nonempty := by exact nonempty_of_not_IsMeagre theorem_2_3
+theorem Exists_P0 (φ : ℕ → ℝ≥0) : P_zero_vol.Nonempty := nonempty_of_not_isMeagre (theorem_2_3 φ)
 
 end
 
@@ -1424,7 +1453,7 @@ end Besicovitch
 open Metric
 
 -- Aaron Liu (Zulip)
-theorem thing {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z : E} :
+theorem hausdorffDist_segment_left_le_dist {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] {x y z : E} :
     hausdorffDist (segment ℝ x z) (segment ℝ y z) ≤ dist x y := by
   apply hausdorffDist_le_of_mem_dist
   · apply dist_nonneg
