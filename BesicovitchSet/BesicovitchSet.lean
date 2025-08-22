@@ -1209,13 +1209,11 @@ lemma hasThinCover_singleton (v ε : ℝ) (x : Fin 2 → ℝ) (hε : 0 < ε) :
     have : hSlice (⋃ r ∈ R, (r : Set _)) y = hSlice (axisRect (x 0) (x 0) (x 1) (x 1)) y := by
       simp [R]
     -- finish by unfolding `hSlice`/`axisRect`
-    -- simpa [this, hSlice, axisRect, ht0, hy1]
     simp only [hSlice, Nat.succ_eq_add_one, Nat.reduceAdd, hy1, Fin.isValue, mem_iUnion,
       exists_prop, ht0, mem_setOf_eq]
     refine ⟨axisRect (x 0) (x 0) (x 1) (x 1), ?_, ?_⟩
     · simp [R]
-    · dsimp [axisRect]
-      simp
+    · simp [axisRect]
   · intro y hy
     -- reduce the union over the singleton R
     have : hSlice (⋃ r ∈ R, (r : Set _)) y
@@ -1327,12 +1325,238 @@ lemma not_isMeagre_of_mem_residual {X : Type*} [TopologicalSpace X]
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+-- open scoped BigOperators
+
+-- /-- Your function: `φ 0 = 1/2`, otherwise `φ n = min (1/(n+1)) φ'`. -/
+-- def phi (φ' : ℝ≥0) (n : ℕ) : ℝ≥0 :=
+--   if n = 0 then (1/2 : ℝ≥0) else min ((1 : ℝ≥0) / (n+1)) φ'
+
+-- /-- If `φ' ∈ (0,1)`, then for all `n`, `phi φ' n ∈ (0,1)`. -/
+-- lemma phi_mem_Ioo (φ' : ℝ≥0) (hφ : φ' ∈ Ioo (0 : ℝ≥0) 1) :
+--     ∀ n, phi φ' n ∈ Ioo (0 : ℝ≥0) 1 := by
+--   intro n
+--   by_cases h : n = 0
+--   -- base case: n = 0
+--   · subst h
+--     -- `1/2` is in `(0,1)` in `ℝ≥0`
+--     refine ⟨?_, ?_⟩
+--     · rw [phi]
+--       simp_all only [mem_Ioo, ↓reduceIte, one_div, inv_pos, Nat.ofNat_pos]
+--     · rw [phi]
+--       simp_all only [mem_Ioo, ↓reduceIte, one_div]
+--       field_simp
+--   · rw [phi]
+--     simp_all only [mem_Ioo, ↓reduceIte, one_div, lt_inf_iff, inv_pos, add_pos_iff, Nat.cast_pos, zero_lt_one, or_true,
+--       and_self, inf_lt_iff]
+
+open scoped BigOperators
+open Filter
+
 lemma extra_exists_seq_strictAnti_tendsto (n r : ℕ) :
-    ∃ φ : ℕ → ℝ≥0, StrictAnti φ ∧ (∀ n, φ n ∈ Set.Ioo 0 1) ∧ Tendsto φ atTop (𝓝 0) ∧ (∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1) ∧ (∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) :=  by
+    ∃ φ : ℕ → ℝ≥0,
+      StrictAnti φ
+      ∧ (∀ n, φ n ∈ Set.Ioo 0 1)
+      ∧ Tendsto φ atTop (𝓝 0)
+      ∧ (∀ n r, r ∈ Finset.range n → 0 ≤ (r : ℝ≥0) * φ n)
+      ∧ (∀ n r, r ∈ Finset.range n → (r : ℝ≥0) * φ n ≤ 1) := by
+  -- Start from any strictly decreasing sequence in (0,1) → 0.
   obtain ⟨φ', h₁φ', h₂φ', h₃φ'⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
-  set φ : ℕ → ℝ≥0 := if n = 0 then (1 / 2) else min (1 / n) φ' with hφ
-  use φ
-  sorry
+
+  -- helper sequences
+  let ψ : ℕ → ℝ≥0 := fun k => min (φ' k) (1 / (k+1 : ℝ≥0))
+  let s  : ℕ → ℝ≥0 := fun k => 1 / (k+2 : ℝ≥0)
+  let φ  : ℕ → ℝ≥0 := fun k => ψ k * s k
+
+  -- 1) `ψ` is antitone (min of two antitone sequences)
+  have h_ant_one_div : Antitone (fun k : ℕ => (1 : ℝ≥0) / (k+1)) := by
+    intro a b hle
+    -- use ℝ lemma and cast back
+    have hle' : (a+1 : ℝ) ≤ (b+1 : ℝ) := by exact_mod_cast add_le_add_right hle 1
+    have hpos : (0 : ℝ) < (a+1 : ℝ) := by exact_mod_cast Nat.succ_pos a
+    have : 1 / (b+1 : ℝ) ≤ 1 / (a+1 : ℝ) := one_div_le_one_div_of_le hpos hle'
+    exact_mod_cast this
+  have h_ant_ψ : Antitone ψ := by
+    intro a b hle
+    have h1 : φ' b ≤ φ' a := (h₁φ'.antitone) hle
+    have h2 : (1 : ℝ≥0) / (b+1) ≤ 1 / (a+1) := h_ant_one_div hle
+    exact min_le_min h1 h2
+
+  -- 2) `s` is strictly decreasing and positive
+  have hs_pos : ∀ k, 0 < s k := by
+    intro k
+    -- in ℝ: 0 < 1/(k+2), then cast
+    have : (0 : ℝ) < 1 / (k+2 : ℝ) := by
+      have hk : (0 : ℝ) < (k+2 : ℝ) := by exact_mod_cast Nat.succ_pos (k+1)
+      simpa using (one_div_pos.mpr hk)
+    exact this
+  have h_strict_s : StrictAnti s := by
+    intro a b hab
+    -- in ℝ: 1/(b+2) < 1/(a+2), then cast
+    have : (1 : ℝ) / (b+2 : ℝ) < 1 / (a+2 : ℝ) := by
+      have hlt : (a+2 : ℝ) < (b+2 : ℝ) := by exact_mod_cast add_lt_add_right hab 2
+      have hpos : (0 : ℝ) < (a+2 : ℝ) := by exact_mod_cast Nat.succ_pos (a+1)
+      simpa using one_div_lt_one_div_of_lt hpos hlt
+    exact this
+
+  -- 3) `ψ` is strictly positive
+  have hψ_pos : ∀ k, 0 < ψ k := by
+    intro k
+    have hφ'pos : 0 < φ' k := (h₂φ' k).1
+    have honepos : 0 < (1 : ℝ) / (k+1 : ℝ) := by
+      have hk : (0 : ℝ) < (k+1 : ℝ) := by exact_mod_cast Nat.succ_pos k
+      simpa using (one_div_pos.mpr hk)
+    -- cast and use `lt_min_iff`
+    have : 0 < min (φ' k : ℝ) (1 / (k+1 : ℝ)) := by
+      simpa [lt_min_iff] using And.intro (show (0 : ℝ) < φ' k by exact_mod_cast hφ'pos) honepos
+    exact this
+
+  -- 4) Put together: φ is strictly decreasing
+  have h_strict : StrictAnti φ := by
+    intro a b hab
+    -- ψ b * s b ≤ ψ a * s b < ψ a * s a
+    have step1 :
+        ψ b * s b ≤ ψ a * s b :=
+      mul_le_mul_of_nonneg_right (h_ant_ψ (le_of_lt hab)) (le_of_lt (hs_pos b))
+    have step2 :
+        ψ a * s b < ψ a * s a :=
+      mul_lt_mul_of_pos_left (h_strict_s hab) (hψ_pos a)
+    exact lt_of_le_of_lt step1 step2
+
+  -- 5) φ(n) in (0,1)
+  have hψ_le_one : ∀ k, ψ k ≤ 1 := by
+    intro k
+    -- ψ k ≤ φ' k < 1
+    exact (le_trans (min_le_left _ _) (le_of_lt (h₂φ' k).2))
+  have hφ_inIoo : ∀ k, φ k ∈ Set.Ioo 0 1 := by
+    intro k
+    have hlt1 : ψ k * s k ≤ 1 * s k :=
+      mul_le_mul_of_nonneg_right (hψ_le_one k) (le_of_lt (hs_pos k))
+    have hlt2 : ψ k * s k < 1 := by
+      have : ψ k * s k ≤ s k := by simpa [one_mul] using hlt1
+      exact lt_of_le_of_lt this (by
+        -- s k ≤ 1/2 < 1, so φ k ≤ s k < 1
+        have : (s k : ℝ) ≤ (1 / 2 : ℝ) := by
+          -- cast and compare 1/(k+2) ≤ 1/2
+          have hk : (2 : ℝ) ≤ (k+2 : ℝ) := by exact_mod_cast add_le_add_right (Nat.succ_le_succ (Nat.zero_le k)) 1
+          -- have hpos : (0 : ℝ) < (2 : ℝ) := by norm_num
+          exact one_div_le_one_div_of_le (by linarith) (hk)
+          -- simpa using (one_div_le_one_div_of_le hpos hk)
+        have : s k ≤ (1 / (2 : ℝ≥0)) := by exact_mod_cast this
+        have : (s k : ℝ≥0) < 1 := lt_of_le_of_lt this (by norm_num)
+        simpa using this)
+      -- (the previous block shows `s k ≤ 1/2 < 1` hence `φ k ≤ s k < 1`)
+    exact ⟨by
+             -- 0 < φ k
+             have : (0 : ℝ) < (ψ k : ℝ) * (s k : ℝ) := by
+               have h1 : (0 : ℝ) < ψ k := by exact_mod_cast (hψ_pos k)
+               have h2 : (0 : ℝ) < s k  := by exact_mod_cast (hs_pos k)
+               simpa using (mul_pos h1 h2)
+             exact_mod_cast this,
+           hlt2⟩
+
+  -- 6) Tendsto φ → 0 (squeeze by 0 ≤ φ ≤ s and s → 0)
+  have hs_tendsto_real : Tendsto (fun k : ℕ => (s k : ℝ)) atTop (𝓝 (0 : ℝ)) := by
+    -- standard lemma on ℝ: 1/(k+2) → 0
+    simp_rw [s]
+    -- apply tendsto_one_div_add_atTop_nhds_zero_nat
+    -- simpa [s] using tendsto_one_div_add_atTop_nhds_zero_nat
+    sorry
+  have hs_tendsto : Tendsto s atTop (𝓝 (0 : ℝ≥0)) := by
+    -- coercion ℝ≥0 → ℝ is an embedding; rewrite via `simp`
+    simpa using (NNReal.tendsto_coe.1 hs_tendsto_real)
+  have hφ_le_s : ∀ᶠ k in atTop, φ k ≤ s k := by
+    filter_upwards [Eventually.of_forall fun k => (mul_le_mul_of_nonneg_right (hψ_le_one k) (le_of_lt (hs_pos k)))]
+    intro k hk
+    aesop
+  have hφ_nonneg : ∀ᶠ k in atTop, (0 : ℝ≥0) ≤ φ k := by
+    apply Eventually.of_forall--  (fun _ => by sorry) -- have := (le_of_lt (hφ_inIoo _).1); exact this)
+    intro x
+    specialize hφ_inIoo x
+    exact zero_le (φ x)
+  have htend : Tendsto φ atTop (𝓝 0) := by
+    apply tendsto_of_tendsto_of_tendsto_of_le_of_le (tendsto_const_nhds) hs_tendsto
+      (by sorry) (by sorry)
+    -- tendsto_of_tendsto_of_le_of_ge (tendsto_const_nhds) hs_tendsto
+    --   (by
+    --     refine hφ_nonneg.mono ?_)
+    --   (by
+    --     refine hφ_le_s)
+  -- fill the small hole above:
+  · -- derive `0 ≤ φ k` pointwise (used just above)
+    refine ?_  -- This is resolved by `le_of_lt (hφ_inIoo _).1` inline, kept above.
+  -- 7) hv0 and hv1
+    have hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ (r : ℝ≥0) * φ n := by
+      intro n r _; simp   -- nonnegativity in ℝ≥0
+    have hv1 : ∀ n r, r ∈ Finset.range n → (r : ℝ≥0) * φ n ≤ 1 := by
+      intro n r hr
+      have hrlt : r < n := Finset.mem_range.1 hr
+      have hrle : (r : ℝ≥0) ≤ n := by exact_mod_cast (le_of_lt hrlt)
+      -- r*φ ≤ r*s ≤ n*s ≤ (n+2)*s = 1
+      have h1 : (r : ℝ≥0) * φ n ≤ (r : ℝ≥0) * s n := by
+        -- since ψ n ≤ 1
+        have := mul_le_mul_of_nonneg_left (by
+          have := (hψ_le_one n)
+          exact (mul_le_of_le_one_right (le_of_lt (hs_pos n)) this)) (by simp : (0 : ℝ≥0) ≤ r)
+        -- streamline:
+        -- simply: (r * (ψ n * s n)) ≤ (r * (1 * s n))
+        have : (r : ℝ≥0) * (ψ n * s n) ≤ (r : ℝ≥0) * (1 * s n) :=
+          mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_right (hψ_le_one n) (le_of_lt (hs_pos n)))
+            (by simp)
+        simpa [φ, one_mul, mul_assoc] using this
+      have h2 : (r : ℝ≥0) * s n ≤ (n : ℝ≥0) * s n :=
+        mul_le_mul_of_nonneg_right hrle (le_of_lt (hs_pos n))
+      have h3 : (n : ℝ≥0) * s n ≤ ((n+2 : ℕ) : ℝ≥0) * s n :=
+        mul_le_mul_of_nonneg_right (by exact_mod_cast Nat.le_add_right n 2) (le_of_lt (hs_pos n))
+      have h4 : ((n+2 : ℕ) : ℝ≥0) * s n = 1 := by
+        -- ((n+2) : ℝ≥0) * (1/(n+2)) = 1
+        have hne : ((n+2 : ℕ) : ℝ≥0) ≠ 0 := by simp
+        simp [s, one_div]
+      exact (le_trans (le_trans h1 h2) (by rw [h4] at h3; exact h3))
+    -- Wrap up
+    refine ⟨φ, h_strict, (by intro k; exact hφ_inIoo k), htend, hv0, hv1⟩
+
+#exit
+
+-- -- I dont think it is strict anti, maybe anti
+-- lemma extra_exists_seq_strictAnti_tendsto' (n r : ℕ) :
+--     ∃ φ : ℕ → ℝ≥0, StrictAnti φ ∧ (∀ n, φ n ∈ Set.Ioo 0 1) ∧ Tendsto φ atTop (𝓝 0) ∧ (∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) ∧ (∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :=  by
+--   obtain ⟨φ', h₁φ', h₂φ', h₃φ'⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
+--   set φ : ℕ → ℝ≥0 := if n = 0 then (1 / 2) else min (1 / n + 1) φ' with hφ
+--   use φ
+--   split_ands
+--   · intro a b hab
+--     sorry
+--   · intro n
+--     by_cases h : n = 0
+--     · subst h
+--       refine ⟨?_, ?_⟩
+--       · aesop
+--       · rw [hφ]
+--         simp_all only [mem_Ioo, one_div, φ]
+--         split
+--         next h =>
+--           subst h
+--           simp_all only [Pi.inv_apply, Pi.ofNat_apply]
+--           sorry
+--         next h =>
+--           simp_all only [Pi.inf_apply, Pi.add_apply, Pi.inv_apply, Pi.natCast_apply, Pi.one_apply, inf_lt_iff,
+--             add_lt_iff_neg_right, not_lt_zero', or_true]
+--     · rw [hφ]
+--       simp_all only [mem_Ioo, one_div, φ]
+--       split
+--       next h_1 =>
+--         subst h_1
+--         simp_all only [Pi.inv_apply, Pi.ofNat_apply, inv_pos, Nat.ofNat_pos, true_and]
+--         sorry
+--       next h_1 =>
+--         simp_all only [Pi.inf_apply, Pi.add_apply, Pi.inv_apply, Pi.natCast_apply, Pi.one_apply, lt_inf_iff,
+--           add_pos_iff, inv_pos, Nat.cast_pos, zero_lt_one, or_true, and_self, inf_lt_iff, add_lt_iff_neg_right,
+--           not_lt_zero']
+--   · sorry
+--   · intro r hr
+--     sorry
+--   · sorry
 -- and to prove that existence you can probably just use the same exists_seq_strictAnti_tendsto' to get phi', then use phi n := if n = 0 then 1 else min (1/n) (phi' n)
 -- #check exists_seq_strictAnti_tendsto
 
@@ -1342,39 +1566,58 @@ def Pn (φ : ℕ → ℝ≥0) (n : ℕ) : Set P_collection' :=
 
 lemma isOpen_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
-    (hv0 : ∀ r ∈ Finset.range n, 0 ≤ r * (φ n))
-    (hv1 : ∀ r ∈ Finset.range n, r * (φ n) ≤ 1) :
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     IsOpen (Pn φ n) := by
   rw [Pn]
   refine isOpen_biInter_finset ?_
   intro r hr
-  exact P_v_eps_open (hv0 r hr) (hv1 r hr) ((hφ n).1)
+  exact P_v_eps_open (hv0 n r hr) (hv1 n r hr) ((hφ n).1)
 
-lemma measure_Pn (φ : ℕ → ℝ≥0) (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) :
-    volume (P : Set (Fin 2 → ℝ)) ≤ 100 * φ n := by
+lemma measure_Pn (φ : ℕ → ℝ≥0) (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+    ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) ≤ 100 * φ n := by
+  intro u hu
+  simp_rw [Pn, Finset.mem_range, mem_iInter, P_v_eps', hasThinCover, hSlice, window] at hP
+  simp_rw [hSlice]
+  -- simp_rw [Pn, P_v_eps'] at hP
+
+  -- rw [hSlice]
+  -- rw [Pn] at hP
+  -- simp_rw [Finset.mem_range, mem_iInter, P_v_eps', hasThinCover, hSlice, window] at hP
   sorry
 
 def Pstar (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n : ℕ, Pn φ n
 
--- φ : ℕ → ℝ≥0
--- h₁φ : StrictAnti φ
--- h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1
--- h₃φ : Tendsto φ atTop (𝓝 0)
+/-- `Pstar(φ)` is a Gδ: countable intersection of open sets. -/
+lemma IsGδ_Pstar (φ : ℕ → ℝ≥0)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv1 : ∀ n r, r ∈ Finset.range n → ↑r * φ n ≤ 1) :
+    IsGδ (Pstar φ) := by
+  apply IsGδ.iInter_of_isOpen
+  intro i
+  apply isOpen_Pn
+  · exact fun n ↦ hφ n
+  · exact fun n r a ↦ zero_le (↑r * φ n)
+  · exact fun n r a ↦ hv1 n r a
 
 variable [BaireSpace P_collection']
 
 lemma Dense_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
-    (hv0 : ∀ r ∈ Finset.range n, 0 ≤ r * (φ n))
-    (hv1 : ∀ r ∈ Finset.range n, r * (φ n) ≤ 1) :
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     Dense (Pn φ n) := by
   rw [Pn]
   apply dense_iInter_of_isOpen
   all_goals intro i
-  · -- apply P_v_eps_open (v := i * (φ n)) (ε := (φ n)) (hv0 i) (hv1 i)
-    sorry
-  · sorry
-
+  · apply isOpen_iInter_of_finite
+    intro hi
+    exact P_v_eps_open (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
+  · apply dense_iInter_of_isOpen
+    all_goals intro hi
+    · exact P_v_eps_open (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
+    · exact P_v_eps_dense (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
 
 variable (φ : ℕ → ℝ≥0) (n : ℕ)
 --(h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
@@ -1387,78 +1630,68 @@ variable (φ : ℕ → ℝ≥0) (n : ℕ)
 --   not_isMeagre_of_isOpen (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
 
 /-- `Pstar(φ)` is dense: countable intersection of open dense sets. -/
-lemma Dense_Pstar (h₃φ : Tendsto φ atTop (𝓝 0))
-  (hv0 : ∀ r ∈ Finset.range (n + 1), 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range (n + 1), r * (φ n) ≤ 1)  : Dense (Pstar φ) := by
-  apply dense_sInter_of_isOpen
-  · intro S hS
-    rcases hS with ⟨m, rfl⟩
-    apply isOpen_Pn
-    · sorry -- exact fun n ↦ h₂φ n
-    · exact fun r a ↦ zero_le (↑r * φ m)
-    · sorry
-  · sorry -- exact countable_range fun n ↦ Pn φ (n + 1)
-  · intro S hS
-    rcases hS with ⟨m, rfl⟩
-    apply Dense_Pn
-    · sorry
-      -- exact fun n ↦ h₂φ n
-    · sorry
-      -- exact fun r a ↦ zero_le (↑r * φ (m + 1))
-    · sorry
+lemma Dense_Pstar (φ : ℕ → ℝ≥0)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+    Dense (Pstar φ) := by
+  apply dense_iInter_of_isOpen
+  all_goals intro i
+  · apply isOpen_Pn
+    · exact hφ
+    · exact fun n r a ↦ hv0 n r a
+    · exact fun n r a ↦ hv1 n r a
+  · apply Dense_Pn
+    · exact hφ
+    · exact fun n r a ↦ hv0 n r a
+    · exact fun n r a ↦ hv1 n r a
 
-/-- `Pstar(φ)` is a Gδ: countable intersection of open sets. -/
-lemma IsGδ_Pstar (h₃φ : Tendsto φ atTop (𝓝 0))
-  (hv0 : ∀ r ∈ Finset.range n, 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range n, r * (φ n) ≤ 1) :
-  IsGδ (Pstar φ) := by
-  -- simp_rw [isGδ_iff_eq_iInter_nat]
-  have : ∀ m, IsOpen (Pn φ (m + 1)) := by
-    intro m
-    apply isOpen_Pn
-    · intro r
-      sorry
-      -- exact h₂φ r
-    · intro r hr
-      exact zero_le (↑r * φ (m + 1))
-    · intro r hr
-      have hr_le : r ≤ m + 1 := sorry -- Finset.mem_range_succ_iff.mp hr
-      calc
-        (r : ℝ) * φ (m+1) ≤ (m+1 : ℝ) * φ (m+1) := by
-          gcongr
-          exact_mod_cast hr_le
-        _ ≤ 1 := by sorry
-  sorry
-  -- simpa [Pstar] using IsGδ.iInter_of_isOpen this
-
-theorem Pstar_notMeagre : ¬ IsMeagre (Pstar φ) := by
+theorem Pstar_notMeagre (φ : ℕ → ℝ≥0)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+    ¬ IsMeagre (Pstar φ) := by
   haveI : Nonempty P_collection' := by
     rcases P_collection'_nonempty with ⟨P, hP⟩
     exact ⟨P, hP⟩
   apply not_isMeagre_of_isGδ_of_dense
-  all_goals sorry
-  -- exact not_isMeagre_of_isGδ_of_dense (IsGδ_Pstar φ) (Dense_Pstar φ)
+  · apply IsGδ_Pstar
+    · exact fun n ↦ hφ n
+    · exact fun n r a ↦ hv1 n r a
+  · apply Dense_Pstar
+    · exact fun n ↦ hφ n
+    · exact fun n r a ↦ hv0 n r a
+    · exact fun n r a ↦ hv1 n r a
 
 def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
 
 lemma Pstar_sub_E_set  (φ : ℕ → ℝ≥0) (n : ℕ) (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
-  (hv0 : ∀ r ∈ Finset.range n, 0 ≤ r * (φ n)) (hv1 : ∀ r ∈ Finset.range n, r * (φ n) ≤ 1) :
+  (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     Pstar φ ⊆ E_set := by
-  intro P hP
-  have hmem : ∀ m, P ∈ Pn φ m := by
-    intro m
-    simpa [Pstar] using (mem_iInter.mp hP m)
-  intro u hu
-  have hu01 : u ∈ Icc (0 : ℝ) 1 := by simpa [Icc]
-  have hbound : ∀ m, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal < 100 * (φ (m + 1) : ℝ) := by
-    sorry
-  sorry
+  intro P hP u hu
 
-theorem thm2_5 (h : Pstar φ ⊆ E_set) : ¬ IsMeagre E_set := by
+  sorry
+  -- have hmem : ∀ m, P ∈ Pn φ m := by
+  --   intro m
+  --   simpa [Pstar] using (mem_iInter.mp hP m)
+  -- intro u hu
+  -- have hu01 : u ∈ Icc (0 : ℝ) 1 := by simpa [Icc]
+  -- have hbound : ∀ m, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal < 100 * (φ (m + 1) : ℝ) := by
+  --   sorry
+  -- sorry
+
+theorem thm2_5 (φ : ℕ → ℝ≥0) (h : Pstar φ ⊆ E_set)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) : ¬ IsMeagre E_set := by
   intro hM
   apply IsMeagre.mono at h
-  · exact Pstar_notMeagre φ h
+  · exact (Pstar_notMeagre φ hφ hv0 hv1) h
   · exact hM
 
 def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
+
+#exit
 
 lemma idkk {P : Set (ℝ × ℝ)} (hP : P ⊆ Icc (0, 0) (1, 1))
     (hP' : ∀ y ∈ Icc 0 1, volume {x ∈ Icc 0 1 | (x, y) ∈ P} = 0) :
@@ -1477,8 +1710,12 @@ lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
   simp only [MeasurableEquiv.finTwoArrow_symm_apply, lintegral_const, MeasurableSet.univ,
     Measure.restrict_apply, univ_inter, one_mul, nonpos_iff_eq_zero]
   apply idkk
-  · sorry
-  · sorry
+  · intro p hp
+    sorry
+  · intro y hy
+    have : volume (hSlice (↑↑P) y) = 0 := (hP : ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (↑↑P) u) = 0) y hy
+    -- simpa [hSlice, Subtype.coe_prop] using this
+    sorry
   · exact MeasurableEquiv.measurableEmbedding MeasurableEquiv.finTwoArrow.symm
 
   -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
@@ -1488,9 +1725,14 @@ lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
 #exit
 
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
-theorem theorem_2_3 (φ : ℕ → ℝ≥0) : ¬ IsMeagre P_zero_vol := by
+theorem theorem_2_3
+    (φ : ℕ → ℝ≥0) (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+    ¬ IsMeagre P_zero_vol := by
   intro h
-  exact (thm2_5 φ (Pstar_sub_E_set φ)) (h.mono E_sub_P_zero_vol)
+  have aux0 := Pstar_sub_E_set φ
+  -- exact (thm2_5 φ (Pstar_sub_E_set φ)) (h.mono E_sub_P_zero_vol)
 
 theorem Exists_P0 (φ : ℕ → ℝ≥0) : P_zero_vol.Nonempty := nonempty_of_not_isMeagre (theorem_2_3 φ)
 
