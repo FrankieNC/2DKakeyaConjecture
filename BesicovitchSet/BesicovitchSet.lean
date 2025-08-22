@@ -341,9 +341,9 @@ lemma hausdorffDist_segment_right_le_dist
 lemma isBounded_segment {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E] (x y : E) :
     IsBounded (segment ℝ x y) := by
   -- The segment is the continuous image of the compact interval `[0,1]`.
-  have hcont : Continuous fun t : ℝ => (1 - t) • x + t • y := by
+  have hcont : Continuous fun t : ℝ ↦ (1 - t) • x + t • y := by
     continuity
-  have hcomp : IsCompact ((fun t : ℝ => (1 - t) • x + t • y) '' Icc (0 : ℝ) 1) :=
+  have hcomp : IsCompact ((fun t : ℝ ↦ (1 - t) • x + t • y) '' Icc (0 : ℝ) 1) :=
     (isCompact_Icc.image hcont)
   -- Use the standard representation of the segment as that image.
   simpa [segment_eq_image] using hcomp.isBounded
@@ -401,14 +401,14 @@ theorem tendsto_hausdorffDist_segments_of_tendsto_endpoints
     intro i
     simpa using (hausdorffDist_segments_le_endpoints (a := xn i) (b := yn i) (a' := x) (b' := y))
   -- The upper bound tends to `0`, hence the Hausdorff distance does by squeezing.
-  refine squeeze_zero (fun _ => hausdorffDist_nonneg) hbound ?_
+  refine squeeze_zero (fun _ ↦ hausdorffDist_nonneg) hbound ?_
   simpa using tendsto_sum_of_tendsto_dists_to_zero hx hy
 
 lemma isCompact_segment01 (a b : ℝ) :
     IsCompact (segment01 a b) := by
   have : segment ℝ ![a, 0] ![b, 1] = AffineMap.lineMap ![a, 0] ![b, 1] '' Icc (0 : ℝ) 1 := by
     simp [segment_eq_image_lineMap]
-  have hcont : Continuous fun t : ℝ => AffineMap.lineMap ![a, 0] ![b, 1] t := by
+  have hcont : Continuous fun t : ℝ ↦ AffineMap.lineMap ![a, 0] ![b, 1] t := by
     continuity
   simpa [segment01, this] using (isCompact_Icc.image hcont)
 
@@ -479,7 +479,7 @@ lemma tendsto_chosen_points
   -- Convert to the metric characterization.
   refine (tendsto_iff_dist_tendsto_zero).2 ?_
   -- Squeeze: `0 ≤ dist (pₙ n) k ≤ dist K (Pₙ n) → 0`.
-  refine squeeze_zero (fun _ => dist_nonneg) (fun n => hle n) ?_
+  refine squeeze_zero (fun _ ↦ dist_nonneg) (fun n ↦ hle n) ?_
   simpa [dist_comm] using h_lim
 
 -- /-- **Stability of the ambient rectangle under limits**.
@@ -586,7 +586,7 @@ theorem Besicovitch.P_col'_IsClosed.extracted_1_3
       apply h_seg_subset_n
       exact hy
 
-    have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L) atTop (𝓝 0) := by
+    have h_seg_HD0 : Tendsto (fun j ↦ hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L) atTop (𝓝 0) := by
       apply tendsto_hausdorffDist_segments_of_tendsto_endpoints
       all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
     observe h_L_compact : IsCompact L
@@ -614,22 +614,22 @@ theorem Besicovitch.P_col'_IsClosed.extracted_1_3
         exact h_seg_j_P j (hqS j)
 
       have hHD_LS :
-          Tendsto (fun j => hausdorffDist L (S j)) atTop (𝓝 0) := by
+          Tendsto (fun j ↦ hausdorffDist L (S j)) atTop (𝓝 0) := by
         simpa [hausdorffDist_comm] using h_seg_HD0
       have hdist_qy :
-          Tendsto (fun j => dist (q j) y) atTop (𝓝 0) := by
-        refine squeeze_zero (fun _ => dist_nonneg) (fun j => hq_le j) hHD_LS
+          Tendsto (fun j ↦ dist (q j) y) atTop (𝓝 0) := by
+        refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ hq_le j) hHD_LS
 
       have hq_tendsto : Tendsto q atTop (𝓝 y) :=
         (tendsto_iff_dist_tendsto_zero).2 hdist_qy
 
-      have hHD_PK_all : Tendsto (fun n => hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
-        have : Tendsto (fun n => dist (Pₙ n) K) atTop (𝓝 0) := by
+      have hHD_PK_all : Tendsto (fun n ↦ hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+        have : Tendsto (fun n ↦ dist (Pₙ n) K) atTop (𝓝 0) := by
           refine Metric.tendsto_atTop.2 ?_
           simpa [dist_comm] using h_lim
         simpa [Metric.NonemptyCompacts.dist_eq] using this
 
-      have hHD_PK_subseq : Tendsto (fun j => hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+      have hHD_PK_subseq : Tendsto (fun j ↦ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
         have hφ_tendsto : Tendsto φ atTop atTop := StrictMono.tendsto_atTop hφ
         exact hHD_PK_all.comp hφ_tendsto
 
@@ -650,15 +650,15 @@ theorem Besicovitch.P_col'_IsClosed.extracted_1_3
           · exact fin_dist (φ j)
         simpa [hr_eq j] using h_le
 
-      have hdist_y_r :Tendsto (fun j => dist y (r j)) atTop (𝓝 0) := by
+      have hdist_y_r :Tendsto (fun j ↦ dist y (r j)) atTop (𝓝 0) := by
         have htri : ∀ j, dist y (r j) ≤ dist y (q j) + dist (q j) (r j) := by
           intro j
           simpa [dist_comm] using dist_triangle_right y (r j) (q j)
 
-        have hsum_to0 : Tendsto (fun j => dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+        have hsum_to0 : Tendsto (fun j ↦ dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
           simpa using hdist_qy.add hHD_PK_subseq
 
-        refine squeeze_zero (fun _ => dist_nonneg) (fun j => ?_) hsum_to0
+        refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ ?_) hsum_to0
         exact (htri j).trans (add_le_add (by simp [dist_comm]) (hr_le_HD j))
 
       have hr_tendsto : Tendsto r atTop (𝓝 y) := by
@@ -679,7 +679,7 @@ theorem Besicovitch.P_col'_IsClosed.extracted_1_3
           · exact h_pn_in_seg_n k hk (φ i)
           · exact hausdorffEdist_ne_top_segment01 (x k hk (φ i) 0) (x k hk (φ i) 1) (x_lim 0) (x_lim 1)
       have h_inf_to_k : Tendsto (fun j ↦ infDist (pₙ k hk (φ j)) L) atTop (𝓝 (infDist k L)) := by
-        have hcont : Continuous (fun x => infDist x L) := by
+        have hcont : Continuous (fun x ↦ infDist x L) := by
           simpa using (Metric.continuous_infDist_pt (s := L))
         apply (hcont.tendsto k).comp
         have : Tendsto (fun j ↦ pₙ k hk (φ j)) atTop (𝓝 k) := by
@@ -756,23 +756,23 @@ theorem Besicovitch.P_col'_IsClosed.extracted_1_7 ⦃Pₙ : ℕ → NonemptyComp
     have hqP : ∀ j, q j ∈ (Pₙ (φ j) : Set (Fin 2 → ℝ)) := by
       intro j
       exact h_seg_n_P j (hqS j)
-    have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x (φ j) 0) (x (φ j) 1)) L) atTop (𝓝 0) := by
+    have h_seg_HD0 : Tendsto (fun j ↦ hausdorffDist (segment01 (x (φ j) 0) (x (φ j) 1)) L) atTop (𝓝 0) := by
       apply tendsto_hausdorffDist_segments_of_tendsto_endpoints
       all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
 
-    have hHD_LS : Tendsto (fun j => hausdorffDist L (S j)) atTop (𝓝 0) := by
+    have hHD_LS : Tendsto (fun j ↦ hausdorffDist L (S j)) atTop (𝓝 0) := by
       simpa [hausdorffDist_comm] using h_seg_HD0
 
-    have hdist_qy : Tendsto (fun j => dist (q j) y) atTop (𝓝 0) := by
-      refine squeeze_zero (fun _ => dist_nonneg) (fun j => hq_le j) hHD_LS
+    have hdist_qy : Tendsto (fun j ↦ dist (q j) y) atTop (𝓝 0) := by
+      refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ hq_le j) hHD_LS
 
-    have hHD_PK_all : Tendsto (fun n => hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
-      have : Tendsto (fun n => dist (Pₙ n) K) atTop (𝓝 0) := by
+    have hHD_PK_all : Tendsto (fun n ↦ hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+      have : Tendsto (fun n ↦ dist (Pₙ n) K) atTop (𝓝 0) := by
         refine Metric.tendsto_atTop.2 ?_
         simpa [dist_comm] using h_lim
       simpa [Metric.NonemptyCompacts.dist_eq] using this
 
-    have hHD_PK_subseq : Tendsto (fun j => hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+    have hHD_PK_subseq : Tendsto (fun j ↦ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
       have hφ_tendsto : Tendsto φ atTop atTop := StrictMono.tendsto_atTop hφ
       exact hHD_PK_all.comp hφ_tendsto
 
@@ -792,15 +792,15 @@ theorem Besicovitch.P_col'_IsClosed.extracted_1_7 ⦃Pₙ : ℕ → NonemptyComp
         Metric.infDist_le_hausdorffDist_of_mem (hqP j) hfin
       simpa [hr_eq j] using h_le
 
-    have hdist_y_r : Tendsto (fun j => dist y (r j)) atTop (𝓝 0) := by
+    have hdist_y_r : Tendsto (fun j ↦ dist y (r j)) atTop (𝓝 0) := by
       have htri : ∀ j, dist y (r j) ≤ dist y (q j) + dist (q j) (r j) := by
         intro j
         simpa [dist_comm] using dist_triangle_right y (r j) (q j)
 
-      have hsum_to0 : Tendsto (fun j => dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+      have hsum_to0 : Tendsto (fun j ↦ dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
         simpa using hdist_qy.add hHD_PK_subseq
 
-      refine squeeze_zero (fun _ => dist_nonneg) (fun j => ?_) hsum_to0
+      refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ ?_) hsum_to0
       exact (htri j).trans (add_le_add (by simp [dist_comm]) (hr_le_HD j))
     have hr_tendsto : Tendsto r atTop (𝓝 y) := (tendsto_iff_dist_tendsto_zero.2 (by simpa [dist_comm] using hdist_y_r))
 
@@ -936,7 +936,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
         apply h_seg_subset_n
         exact hy
 
-      have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L) atTop (𝓝 0) := by
+      have h_seg_HD0 : Tendsto (fun j ↦ hausdorffDist (segment01 (x k hk (φ j) 0) (x k hk (φ j) 1)) L) atTop (𝓝 0) := by
         apply tendsto_hausdorffDist_segments_of_tendsto_endpoints
         all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
       observe h_L_compact : IsCompact L
@@ -964,22 +964,22 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
           exact h_seg_j_P j (hqS j)
 
         have hHD_LS :
-            Tendsto (fun j => hausdorffDist L (S j)) atTop (𝓝 0) := by
+            Tendsto (fun j ↦ hausdorffDist L (S j)) atTop (𝓝 0) := by
           simpa [hausdorffDist_comm] using h_seg_HD0
         have hdist_qy :
-            Tendsto (fun j => dist (q j) y) atTop (𝓝 0) := by
-          refine squeeze_zero (fun _ => dist_nonneg) (fun j => hq_le j) hHD_LS
+            Tendsto (fun j ↦ dist (q j) y) atTop (𝓝 0) := by
+          refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ hq_le j) hHD_LS
 
         have hq_tendsto : Tendsto q atTop (𝓝 y) :=
           (tendsto_iff_dist_tendsto_zero).2 hdist_qy
 
-        have hHD_PK_all : Tendsto (fun n => hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
-          have : Tendsto (fun n => dist (Pₙ n) K) atTop (𝓝 0) := by
+        have hHD_PK_all : Tendsto (fun n ↦ hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+          have : Tendsto (fun n ↦ dist (Pₙ n) K) atTop (𝓝 0) := by
             refine Metric.tendsto_atTop.2 ?_
             simpa [dist_comm] using h_lim
           simpa [Metric.NonemptyCompacts.dist_eq] using this
 
-        have hHD_PK_subseq : Tendsto (fun j => hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+        have hHD_PK_subseq : Tendsto (fun j ↦ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
           have hφ_tendsto : Tendsto φ atTop atTop := StrictMono.tendsto_atTop hφ
           exact hHD_PK_all.comp hφ_tendsto
 
@@ -1000,15 +1000,15 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
             · exact fin_dist (φ j)
           simpa [hr_eq j] using h_le
 
-        have hdist_y_r :Tendsto (fun j => dist y (r j)) atTop (𝓝 0) := by
+        have hdist_y_r :Tendsto (fun j ↦ dist y (r j)) atTop (𝓝 0) := by
           have htri : ∀ j, dist y (r j) ≤ dist y (q j) + dist (q j) (r j) := by
             intro j
             simpa [dist_comm] using dist_triangle_right y (r j) (q j)
 
-          have hsum_to0 : Tendsto (fun j => dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+          have hsum_to0 : Tendsto (fun j ↦ dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
             simpa using hdist_qy.add hHD_PK_subseq
 
-          refine squeeze_zero (fun _ => dist_nonneg) (fun j => ?_) hsum_to0
+          refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ ?_) hsum_to0
           exact (htri j).trans (add_le_add (by simp [dist_comm]) (hr_le_HD j))
 
         have hr_tendsto : Tendsto r atTop (𝓝 y) := by
@@ -1029,7 +1029,7 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
             · exact h_pn_in_seg_n k hk (φ i)
             · exact hausdorffEdist_ne_top_segment01 (x k hk (φ i) 0) (x k hk (φ i) 1) (x_lim 0) (x_lim 1)
         have h_inf_to_k : Tendsto (fun j ↦ infDist (pₙ k hk (φ j)) L) atTop (𝓝 (infDist k L)) := by
-          have hcont : Continuous (fun x => infDist x L) := by
+          have hcont : Continuous (fun x ↦ infDist x L) := by
             simpa using (Metric.continuous_infDist_pt (s := L))
           apply (hcont.tendsto k).comp
           have : Tendsto (fun j ↦ pₙ k hk (φ j)) atTop (𝓝 k) := by
@@ -1104,23 +1104,23 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
       have hqP : ∀ j, q j ∈ (Pₙ (φ j) : Set (Fin 2 → ℝ)) := by
         intro j
         exact h_seg_n_P j (hqS j)
-      have h_seg_HD0 : Tendsto (fun j => hausdorffDist (segment01 (x (φ j) 0) (x (φ j) 1)) L) atTop (𝓝 0) := by
+      have h_seg_HD0 : Tendsto (fun j ↦ hausdorffDist (segment01 (x (φ j) 0) (x (φ j) 1)) L) atTop (𝓝 0) := by
         apply tendsto_hausdorffDist_segments_of_tendsto_endpoints
         all_goals simp_all [tendsto_pi_nhds, Fin.forall_fin_two]
 
-      have hHD_LS : Tendsto (fun j => hausdorffDist L (S j)) atTop (𝓝 0) := by
+      have hHD_LS : Tendsto (fun j ↦ hausdorffDist L (S j)) atTop (𝓝 0) := by
         simpa [hausdorffDist_comm] using h_seg_HD0
 
-      have hdist_qy : Tendsto (fun j => dist (q j) y) atTop (𝓝 0) := by
-        refine squeeze_zero (fun _ => dist_nonneg) (fun j => hq_le j) hHD_LS
+      have hdist_qy : Tendsto (fun j ↦ dist (q j) y) atTop (𝓝 0) := by
+        refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ hq_le j) hHD_LS
 
-      have hHD_PK_all : Tendsto (fun n => hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
-        have : Tendsto (fun n => dist (Pₙ n) K) atTop (𝓝 0) := by
+      have hHD_PK_all : Tendsto (fun n ↦ hausdorffDist (Pₙ n : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+        have : Tendsto (fun n ↦ dist (Pₙ n) K) atTop (𝓝 0) := by
           refine Metric.tendsto_atTop.2 ?_
           simpa [dist_comm] using h_lim
         simpa [Metric.NonemptyCompacts.dist_eq] using this
 
-      have hHD_PK_subseq : Tendsto (fun j => hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+      have hHD_PK_subseq : Tendsto (fun j ↦ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
         have hφ_tendsto : Tendsto φ atTop atTop := StrictMono.tendsto_atTop hφ
         exact hHD_PK_all.comp hφ_tendsto
 
@@ -1140,15 +1140,15 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
           Metric.infDist_le_hausdorffDist_of_mem (hqP j) hfin
         simpa [hr_eq j] using h_le
 
-      have hdist_y_r : Tendsto (fun j => dist y (r j)) atTop (𝓝 0) := by
+      have hdist_y_r : Tendsto (fun j ↦ dist y (r j)) atTop (𝓝 0) := by
         have htri : ∀ j, dist y (r j) ≤ dist y (q j) + dist (q j) (r j) := by
           intro j
           simpa [dist_comm] using dist_triangle_right y (r j) (q j)
 
-        have hsum_to0 : Tendsto (fun j => dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
+        have hsum_to0 : Tendsto (fun j ↦ dist (q j) y + hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _)) atTop (𝓝 0) := by
           simpa using hdist_qy.add hHD_PK_subseq
 
-        refine squeeze_zero (fun _ => dist_nonneg) (fun j => ?_) hsum_to0
+        refine squeeze_zero (fun _ ↦ dist_nonneg) (fun j ↦ ?_) hsum_to0
         exact (htri j).trans (add_le_add (by simp [dist_comm]) (hr_le_HD j))
       have hr_tendsto : Tendsto r atTop (𝓝 y) := (tendsto_iff_dist_tendsto_zero.2 (by simpa [dist_comm] using hdist_y_r))
 
@@ -1202,8 +1202,8 @@ lemma hasThinCover_singleton (v ε : ℝ) (x : Fin 2 → ℝ) (hε : 0 < ε) :
     -- ht: (![t,y]) ∈ {x}  ⇒  t = x 0 and y = x 1
     have hxy : (![t, y] : Fin 2 → ℝ) = x := by
       simpa [hSlice] using ht
-    have ht0 : t = x 0 := by simpa using congrArg (fun p => p 0) hxy
-    have hy1 : y = x 1 := by simpa using congrArg (fun p => p 1) hxy
+    have ht0 : t = x 0 := by simpa using congrArg (fun p ↦ p 0) hxy
+    have hy1 : y = x 1 := by simpa using congrArg (fun p ↦ p 1) hxy
     -- show t belongs to the slice of our rectangle at y
     -- the big union over a singleton is just that set
     have : hSlice (⋃ r ∈ R, (r : Set _)) y = hSlice (axisRect (x 0) (x 0) (x 1) (x 1)) y := by
@@ -1336,12 +1336,12 @@ lemma extra_exists_seq_strictAnti_tendsto :
   obtain ⟨φ', h₁φ', h₂φ', h₃φ'⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
 
   -- helper sequences
-  let ψ : ℕ → ℝ≥0 := fun k => min (φ' k) (1 / (k+1 : ℝ≥0))
-  let s  : ℕ → ℝ≥0 := fun k => 1 / (k+2 : ℝ≥0)
-  let φ  : ℕ → ℝ≥0 := fun k => ψ k * s k
+  let ψ : ℕ → ℝ≥0 := fun k ↦ min (φ' k) (1 / (k+1 : ℝ≥0))
+  let s  : ℕ → ℝ≥0 := fun k ↦ 1 / (k+2 : ℝ≥0)
+  let φ  : ℕ → ℝ≥0 := fun k ↦ ψ k * s k
 
   -- 1) `ψ` is antitone (min of two antitone sequences)
-  have h_ant_one_div : Antitone (fun k : ℕ => (1 : ℝ≥0) / (k+1)) := by
+  have h_ant_one_div : Antitone (fun k : ℕ ↦ (1 : ℝ≥0) / (k+1)) := by
     intro a b hle
     -- use ℝ lemma and cast back
     have hle' : (a+1 : ℝ) ≤ (b+1 : ℝ) := by exact_mod_cast add_le_add_right hle 1
@@ -1428,7 +1428,7 @@ lemma extra_exists_seq_strictAnti_tendsto :
            hlt2⟩
 
   -- 6) Tendsto φ → 0 (squeeze by 0 ≤ φ ≤ s and s → 0)
-  have hs_tendsto_real : Tendsto (fun k : ℕ => (s k : ℝ)) atTop (𝓝 (0 : ℝ)) := by
+  have hs_tendsto_real : Tendsto (fun k : ℕ ↦ (s k : ℝ)) atTop (𝓝 (0 : ℝ)) := by
     -- standard lemma on ℝ: 1/(k+2) → 0
     simp_rw [s]
     have hs0 : Tendsto (fun n : ℕ ↦ 1 / ((n : ℝ) + 2)) atTop (𝓝 0) := by
@@ -1440,7 +1440,7 @@ lemma extra_exists_seq_strictAnti_tendsto :
     -- coercion ℝ≥0 → ℝ is an embedding; rewrite via `simp`
     simpa using (NNReal.tendsto_coe.1 hs_tendsto_real)
   have hφ_le_s : ∀ᶠ k in atTop, φ k ≤ s k := by
-    filter_upwards [Eventually.of_forall fun k => (mul_le_mul_of_nonneg_right (hψ_le_one k) (le_of_lt (hs_pos k)))]
+    filter_upwards [Eventually.of_forall fun k ↦ (mul_le_mul_of_nonneg_right (hψ_le_one k) (le_of_lt (hs_pos k)))]
     intro k hk
     aesop
   have hφ_nonneg : ∀ᶠ k in atTop, (0 : ℝ≥0) ≤ φ k := by
@@ -1449,7 +1449,7 @@ lemma extra_exists_seq_strictAnti_tendsto :
     specialize hφ_inIoo x
     exact zero_le (φ x)
   have htend : Tendsto φ atTop (𝓝 0) := tendsto_of_tendsto_of_tendsto_of_le_of_le'
-    (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : ℝ≥0)) atTop (𝓝 0))  -- lower bound g → 0
+    (tendsto_const_nhds : Tendsto (fun _ : ℕ ↦ (0 : ℝ≥0)) atTop (𝓝 0))  -- lower bound g → 0
     hs_tendsto                                                     -- upper bound h = s → 0
     hφ_nonneg                                                      -- eventually 0 ≤ φ
     hφ_le_s                                                        -- eventually φ ≤ s
@@ -1516,7 +1516,7 @@ lemma measure_Pn (φ : ℕ → ℝ≥0) (n : ℕ) (P : P_collection') (hP : P �
 
 def Pstar (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n : ℕ, Pn φ n
 
-/-- `Pstar(φ)` is a Gδ: countable intersection of open sets. -/
+/-- `Pstar(φ)` is a Gδ set: countable intersection of open sets. -/
 lemma IsGδ_Pstar (φ : ℕ → ℝ≥0)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv1 : ∀ n r, r ∈ Finset.range n → ↑r * φ n ≤ 1) :
