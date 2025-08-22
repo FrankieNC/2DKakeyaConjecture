@@ -1325,34 +1325,7 @@ lemma not_isMeagre_of_mem_residual {X : Type*} [TopologicalSpace X]
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- open scoped BigOperators
-
--- /-- Your function: `φ 0 = 1/2`, otherwise `φ n = min (1/(n+1)) φ'`. -/
--- def phi (φ' : ℝ≥0) (n : ℕ) : ℝ≥0 :=
---   if n = 0 then (1/2 : ℝ≥0) else min ((1 : ℝ≥0) / (n+1)) φ'
-
--- /-- If `φ' ∈ (0,1)`, then for all `n`, `phi φ' n ∈ (0,1)`. -/
--- lemma phi_mem_Ioo (φ' : ℝ≥0) (hφ : φ' ∈ Ioo (0 : ℝ≥0) 1) :
---     ∀ n, phi φ' n ∈ Ioo (0 : ℝ≥0) 1 := by
---   intro n
---   by_cases h : n = 0
---   -- base case: n = 0
---   · subst h
---     -- `1/2` is in `(0,1)` in `ℝ≥0`
---     refine ⟨?_, ?_⟩
---     · rw [phi]
---       simp_all only [mem_Ioo, ↓reduceIte, one_div, inv_pos, Nat.ofNat_pos]
---     · rw [phi]
---       simp_all only [mem_Ioo, ↓reduceIte, one_div]
---       field_simp
---   · rw [phi]
---     simp_all only [mem_Ioo, ↓reduceIte, one_div, lt_inf_iff, inv_pos, add_pos_iff, Nat.cast_pos, zero_lt_one, or_true,
---       and_self, inf_lt_iff]
-
-open scoped BigOperators
-open Filter
-
-lemma extra_exists_seq_strictAnti_tendsto (n r : ℕ) :
+lemma extra_exists_seq_strictAnti_tendsto :
     ∃ φ : ℕ → ℝ≥0,
       StrictAnti φ
       ∧ (∀ n, φ n ∈ Set.Ioo 0 1)
@@ -1458,9 +1431,11 @@ lemma extra_exists_seq_strictAnti_tendsto (n r : ℕ) :
   have hs_tendsto_real : Tendsto (fun k : ℕ => (s k : ℝ)) atTop (𝓝 (0 : ℝ)) := by
     -- standard lemma on ℝ: 1/(k+2) → 0
     simp_rw [s]
-    -- apply tendsto_one_div_add_atTop_nhds_zero_nat
-    -- simpa [s] using tendsto_one_div_add_atTop_nhds_zero_nat
-    sorry
+    have hs0 : Tendsto (fun n : ℕ ↦ 1 / ((n : ℝ) + 2)) atTop (𝓝 0) := by
+      have h : Tendsto (fun n : ℕ ↦ 1 / (↑(n + 2) : ℝ)) atTop (𝓝 0) := by
+        simpa using (tendsto_add_atTop_iff_nat 2).2 (_root_.tendsto_const_div_atTop_nhds_zero_nat 1)
+      simpa [Nat.cast_add, Nat.cast_ofNat] using h
+    simpa [tendsto_one_div_add_atTop_nhds_zero_nat] using hs0
   have hs_tendsto : Tendsto s atTop (𝓝 (0 : ℝ≥0)) := by
     -- coercion ℝ≥0 → ℝ is an embedding; rewrite via `simp`
     simpa using (NNReal.tendsto_coe.1 hs_tendsto_real)
@@ -1469,19 +1444,15 @@ lemma extra_exists_seq_strictAnti_tendsto (n r : ℕ) :
     intro k hk
     aesop
   have hφ_nonneg : ∀ᶠ k in atTop, (0 : ℝ≥0) ≤ φ k := by
-    apply Eventually.of_forall--  (fun _ => by sorry) -- have := (le_of_lt (hφ_inIoo _).1); exact this)
+    apply Eventually.of_forall
     intro x
     specialize hφ_inIoo x
     exact zero_le (φ x)
-  have htend : Tendsto φ atTop (𝓝 0) := by
-    apply tendsto_of_tendsto_of_tendsto_of_le_of_le (tendsto_const_nhds) hs_tendsto
-      (by sorry) (by sorry)
-    -- tendsto_of_tendsto_of_le_of_ge (tendsto_const_nhds) hs_tendsto
-    --   (by
-    --     refine hφ_nonneg.mono ?_)
-    --   (by
-    --     refine hφ_le_s)
-  -- fill the small hole above:
+  have htend : Tendsto φ atTop (𝓝 0) := tendsto_of_tendsto_of_tendsto_of_le_of_le'
+    (tendsto_const_nhds : Tendsto (fun _ : ℕ => (0 : ℝ≥0)) atTop (𝓝 0))  -- lower bound g → 0
+    hs_tendsto                                                     -- upper bound h = s → 0
+    hφ_nonneg                                                      -- eventually 0 ≤ φ
+    hφ_le_s                                                        -- eventually φ ≤ s
   · -- derive `0 ≤ φ k` pointwise (used just above)
     refine ?_  -- This is resolved by `le_of_lt (hφ_inIoo _).1` inline, kept above.
   -- 7) hv0 and hv1
@@ -1516,50 +1487,6 @@ lemma extra_exists_seq_strictAnti_tendsto (n r : ℕ) :
     -- Wrap up
     refine ⟨φ, h_strict, (by intro k; exact hφ_inIoo k), htend, hv0, hv1⟩
 
-#exit
-
--- -- I dont think it is strict anti, maybe anti
--- lemma extra_exists_seq_strictAnti_tendsto' (n r : ℕ) :
---     ∃ φ : ℕ → ℝ≥0, StrictAnti φ ∧ (∀ n, φ n ∈ Set.Ioo 0 1) ∧ Tendsto φ atTop (𝓝 0) ∧ (∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) ∧ (∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :=  by
---   obtain ⟨φ', h₁φ', h₂φ', h₃φ'⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
---   set φ : ℕ → ℝ≥0 := if n = 0 then (1 / 2) else min (1 / n + 1) φ' with hφ
---   use φ
---   split_ands
---   · intro a b hab
---     sorry
---   · intro n
---     by_cases h : n = 0
---     · subst h
---       refine ⟨?_, ?_⟩
---       · aesop
---       · rw [hφ]
---         simp_all only [mem_Ioo, one_div, φ]
---         split
---         next h =>
---           subst h
---           simp_all only [Pi.inv_apply, Pi.ofNat_apply]
---           sorry
---         next h =>
---           simp_all only [Pi.inf_apply, Pi.add_apply, Pi.inv_apply, Pi.natCast_apply, Pi.one_apply, inf_lt_iff,
---             add_lt_iff_neg_right, not_lt_zero', or_true]
---     · rw [hφ]
---       simp_all only [mem_Ioo, one_div, φ]
---       split
---       next h_1 =>
---         subst h_1
---         simp_all only [Pi.inv_apply, Pi.ofNat_apply, inv_pos, Nat.ofNat_pos, true_and]
---         sorry
---       next h_1 =>
---         simp_all only [Pi.inf_apply, Pi.add_apply, Pi.inv_apply, Pi.natCast_apply, Pi.one_apply, lt_inf_iff,
---           add_pos_iff, inv_pos, Nat.cast_pos, zero_lt_one, or_true, and_self, inf_lt_iff, add_lt_iff_neg_right,
---           not_lt_zero']
---   · sorry
---   · intro r hr
---     sorry
---   · sorry
--- and to prove that existence you can probably just use the same exists_seq_strictAnti_tendsto' to get phi', then use phi n := if n = 0 then 1 else min (1/n) (phi' n)
--- #check exists_seq_strictAnti_tendsto
-
 /-- TO DO -/
 def Pn (φ : ℕ → ℝ≥0) (n : ℕ) : Set P_collection' :=
   ⋂ r ∈ Finset.range n, P_v_eps' ((r : ℝ) * (φ n : ℝ)) (φ n : ℝ)
@@ -1576,7 +1503,7 @@ lemma isOpen_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
 
 lemma measure_Pn (φ : ℕ → ℝ≥0) (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
-    ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) ≤ 100 * φ n := by
+    ∀ u ∈ Icc (0 : ℝ) 1, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal ≤ 100 * φ n := by
   intro u hu
   simp_rw [Pn, Finset.mem_range, mem_iInter, P_v_eps', hasThinCover, hSlice, window] at hP
   simp_rw [hSlice]
