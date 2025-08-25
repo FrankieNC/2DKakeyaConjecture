@@ -1634,7 +1634,9 @@ theorem extra_exists_seq_strictAnti_tendsto :
 def Pn (φ : ℕ → ℝ≥0) (n : ℕ) : Set P_collection' :=
   ⋂ r ∈ Finset.range n, P_v_eps' ((r : ℝ) * (φ n : ℝ)) (φ n : ℝ)
 
-lemma isOpen_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
+variable (φ : ℕ → ℝ≥0)
+
+lemma isOpen_Pn (n : ℕ)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
@@ -1644,23 +1646,19 @@ lemma isOpen_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
   intro r hr
   exact P_v_eps_open (hv0 n r hr) (hv1 n r hr) ((hφ n).1)
 
-lemma measure_Pn (φ : ℕ → ℝ≥0) (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
+lemma measure_Pn (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     ∀ u ∈ Icc (0 : ℝ) 1, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal ≤ 100 * φ n := by
   intro u hu
   simp_rw [Pn, Finset.mem_range, mem_iInter, P_v_eps', hasThinCover, hSlice, window] at hP
   simp_rw [hSlice]
-  -- simp_rw [Pn, P_v_eps'] at hP
-
-  -- rw [hSlice]
-  -- rw [Pn] at hP
-  -- simp_rw [Finset.mem_range, mem_iInter, P_v_eps', hasThinCover, hSlice, window] at hP
   sorry
+  -- exact (ENNReal.toReal_mono hμmono).trans_lt.this.le
 
 def Pstar (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n : ℕ, Pn φ n
 
 /-- `Pstar(φ)` is a Gδ set: countable intersection of open sets. -/
-lemma IsGδ_Pstar (φ : ℕ → ℝ≥0)
+lemma IsGδ_Pstar
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv1 : ∀ n r, r ∈ Finset.range n → ↑r * φ n ≤ 1) :
     IsGδ (Pstar φ) := by
@@ -1673,7 +1671,7 @@ lemma IsGδ_Pstar (φ : ℕ → ℝ≥0)
 
 variable [BaireSpace P_collection']
 
-lemma Dense_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
+lemma Dense_Pn (n : ℕ)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
@@ -1689,7 +1687,6 @@ lemma Dense_Pn (φ : ℕ → ℝ≥0) (n : ℕ)
     · exact P_v_eps_open (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
     · exact P_v_eps_dense (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
 
-variable (φ : ℕ → ℝ≥0) (n : ℕ)
 --(h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
 
 -- include h₁φ h₂φ
@@ -1700,7 +1697,7 @@ variable (φ : ℕ → ℝ≥0) (n : ℕ)
 --   not_isMeagre_of_isOpen (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
 
 /-- `Pstar(φ)` is dense: countable intersection of open dense sets. -/
-lemma Dense_Pstar (φ : ℕ → ℝ≥0)
+lemma Dense_Pstar
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
@@ -1716,7 +1713,7 @@ lemma Dense_Pstar (φ : ℕ → ℝ≥0)
     · exact fun n r a ↦ hv0 n r a
     · exact fun n r a ↦ hv1 n r a
 
-theorem Pstar_notMeagre (φ : ℕ → ℝ≥0)
+theorem Pstar_notMeagre
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
@@ -1735,22 +1732,26 @@ theorem Pstar_notMeagre (φ : ℕ → ℝ≥0)
 
 def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
 
-lemma Pstar_sub_E_set  (φ : ℕ → ℝ≥0) (n : ℕ) (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
-  (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+lemma Pstar_sub_E_set
+    (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     Pstar φ ⊆ E_set := by
   intro P hP u hu
-  refine le_antisymm ?_ (by positivity)
+  -- refine le_antisymm ?_ (by positivity)
+  have bound : ∀ n, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal ≤ 100 * φ n := by
+    intro n
+    apply measure_Pn
+    · rw [Pstar, mem_iInter] at hP
+      exact hP n
+    · exact fun n r a ↦ hv0 n r a
+    · exact fun n r a ↦ hv1 n r a
+    · exact hu
+  have lim : Tendsto (fun n ↦ 100 * φ n) atTop (𝓝 0) := by
+    simpa [zero_mul] using (tendsto_const_nhds.mul h₃φ)
   sorry
-  -- have hmem : ∀ m, P ∈ Pn φ m := by
-  --   intro m
-  --   simpa [Pstar] using (mem_iInter.mp hP m)
-  -- intro u hu
-  -- have hu01 : u ∈ Icc (0 : ℝ) 1 := by simpa [Icc]
-  -- have hbound : ∀ m, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal < 100 * (φ (m + 1) : ℝ) := by
-  --   sorry
-  -- sorry
 
-theorem thm2_5 (φ : ℕ → ℝ≥0) (h : Pstar φ ⊆ E_set)
+theorem thm2_5
+    (h : Pstar φ ⊆ E_set)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) : ¬ IsMeagre E_set := by
@@ -1761,29 +1762,62 @@ theorem thm2_5 (φ : ℕ → ℝ≥0) (h : Pstar φ ⊆ E_set)
 
 def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
 
-lemma idkk {P : Set (ℝ × ℝ)} (hP : P ⊆ Icc (0, 0) (1, 1))
-    (hP' : ∀ y ∈ Icc 0 1, volume {x ∈ Icc 0 1 | (x, y) ∈ P} = 0) :
+lemma aux {P : Set (ℝ × ℝ)} (hP : P ⊆ Icc (-1, 0) (1, 1))
+    (hP' : ∀ y ∈ Icc 0 1, volume {x ∈ Icc (-1) 1 | (x, y) ∈ P} = 0) :
     volume P = 0 := by
   sorry
 
-lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
+lemma mem_prod_Icc_of_mem_P {P : P_collection'} {p : ℝ × ℝ}
+    (hp : (Fin.cons p.1 (Fin.cons p.2 finZeroElim) : Fin 2 → ℝ) ∈ (P : Set (Fin 2 → ℝ))) :
+    p ∈ Icc (-1,0) (1,1) := by
+  -- `P ⊆ rectangle`, so this vector lies in `rectangle`
+  have hmem := P.property.2.1 hp
+  -- rectangle = {q | q 0 ∈ Icc 0 1 ∧ q 1 ∈ Icc 0 1}
+  simp only [rectangle, mem_Icc] at hmem
+  rcases hmem with ⟨hx, hy⟩
+  simp only [Pi.le_def, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.forall_fin_two, Fin.isValue,
+    Matrix.cons_val_zero, Fin.cons_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+    Fin.cons_one] at hx hy
+  constructor
+  · exact hx
+  · exact hy
+
+theorem E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
   intro P hP
   simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
-  -- #check MeasureTheory.lintegral_prod_le
   have := (MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ))
   rw [← MeasureTheory.Measure.volume_eq_prod, ← MeasureTheory.volume_pi] at this
   rw [← this.symm.setLIntegral_comp_preimage_emb]
   apply le_antisymm _ (by positivity)
-  -- prove this with idkk
   simp only [MeasurableEquiv.finTwoArrow_symm_apply, lintegral_const, MeasurableSet.univ,
     Measure.restrict_apply, univ_inter, one_mul, nonpos_iff_eq_zero]
-  apply idkk
+  apply aux
   · intro p hp
-    sorry
+    exact mem_prod_Icc_of_mem_P hp
   · intro y hy
     have : volume (hSlice (↑↑P) y) = 0 := (hP : ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (↑↑P) u) = 0) y hy
-    -- simpa [hSlice, Subtype.coe_prop] using this
-    sorry
+    have hset :
+    {x | x ∈ Icc 0 1 ∧ (x, y) ∈ (fun p : ℝ × ℝ ↦ Fin.cons p.1 (Fin.cons p.2 finZeroElim)) ⁻¹' (P : Set (Fin 2 → ℝ)) }
+      = {x | x ∈ Icc 0 1 ∧ (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } := by
+      ext x
+      simp only [mem_Icc, Nat.reduceAdd, mem_preimage, SetLike.mem_coe, mem_setOf_eq,
+        Nat.succ_eq_add_one, and_congr_right_iff, and_imp]
+      intro hx0 hx1
+      constructor
+      all_goals
+        intro h
+        exact h
+    have hsubset :
+    {x | x ∈ Icc (-1 : ℝ) 1 ∧ (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) }
+      ⊆ {x | (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } := by
+      intro x hx
+      exact hx.2
+    have hslice_zero : volume {x | (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } = 0 := by
+      simpa [hSlice] using this
+    -- A subset of a null set is null
+    have : volume {x | x ∈ Icc (-1 : ℝ) 1 ∧ (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } = 0 :=
+      measure_mono_null hsubset hslice_zero
+    simpa [hset]
   · exact MeasurableEquiv.measurableEmbedding MeasurableEquiv.finTwoArrow.symm
 
   -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
@@ -1793,11 +1827,12 @@ lemma E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
 
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
 theorem theorem_2_3
-    (φ : ℕ → ℝ≥0) (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
+    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     ¬ IsMeagre P_zero_vol := by
   intro h
+
   sorry
   -- exact (thm2_5 φ (Pstar_sub_E_set φ)) (h.mono E_sub_P_zero_vol)
 
@@ -1813,84 +1848,72 @@ end
 
 end Besicovitch
 
-#exit
-
 section
 
-open Besicovitch
+open Besicovitch ENNReal NNReal MeasureTheory Measure Filter Topology EMetric
 
--- /-- In ℝ, there exists a Kakeya set. -/
-theorem one_dim_exists_kakeya : ∃ s : Set ℝ, IsKakeya s := ⟨closedBall (0 : ℝ) 1, IsKakeya_ball⟩
+/-- Any Kakeya set in `ℝ` contains a closed unit‐length interval. -/
+lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
+    ∃ x₀, Icc x₀ (x₀ + 1) ⊆ K := by
+  have := hK 1 (by simp)
+  -- simp only [segment_eq_Icc, norm_one] at this
+  rcases this with ⟨x₀, hseg⟩
+  exact ⟨x₀, by simpa using hseg⟩
 
--- /-- Any Kakeya set in `ℝ` contains a closed unit‐length interval. -/
--- lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
---     ∃ x₀, Icc x₀ (x₀ + 1) ⊆ K := by
---   have := hK 1 (by simp)
---   -- simp only [segment_eq_Icc, norm_one] at this
---   rcases this with ⟨x₀, hseg⟩
---   exact ⟨x₀, by simpa using hseg⟩
+/-- Any closed interval of length 1 has Hausdorff dimension 1. -/
+lemma dimH_Icc_length_one (a : ℝ) :
+    dimH (Icc a (a + 1)) = 1 := by
+  have h : (interior (Icc a (a + 1))).Nonempty := by simp [interior_Icc]
+  calc
+    dimH (Icc a (a + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior h
+    _ = 1 := by simp
 
--- /-- Any closed interval of length 1 has Hausdorff dimension 1. -/
--- lemma dimH_Icc_length_one (a : ℝ) :
---     dimH (Icc a (a + 1)) = 1 := by
---   have h : (interior (Icc a (a + 1))).Nonempty := by simp [interior_Icc]
---   calc
---     dimH (Icc a (a + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior h
---     _ = 1 := by simp
+/-- If a set contains some unit interval, then its `dimH ≥ 1`. -/
+lemma dimH_of_contains_Icc {K : Set ℝ} {x₀} (h : Icc x₀ (x₀ + 1) ⊆ K) :
+    1 ≤ dimH K := by
+  calc
+    1 = dimH (Icc x₀ (x₀ + 1)) := (dimH_Icc_length_one x₀).symm
+    _ ≤ dimH K := dimH_mono h
 
--- /-- If a set contains some unit‐interval, then its dimH ≥ 1. -/
--- lemma dimH_of_contains_Icc {K : Set ℝ} {x₀} (h : Icc x₀ (x₀ + 1) ⊆ K) :
---     1 ≤ dimH K := by
---   calc
---     1 = dimH (Icc x₀ (x₀ + 1)) := (dimH_Icc_length_one x₀).symm
---     _ ≤ dimH K := dimH_mono h
+/-- Any subset of `ℝ` has `dimH ≤ 1`. -/
+lemma dimH_le_one_univ : ∀ (K : Set ℝ), dimH K ≤ 1 := fun K ↦ by
+  calc
+    dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ _)
+    _ = Module.finrank ℝ ℝ := by simp [dimH_univ]
+    _ = 1 := by simp
 
--- /-- Any subset of `ℝ` has dimH ≤ 1. -/
--- lemma dimH_le_one_univ : ∀ (K : Set ℝ), dimH K ≤ 1 := fun K ↦ by
---   calc
---     dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ _)
---     _ = Module.finrank ℝ ℝ := by simp [dimH_univ]
---     _ = 1 := by simp
+/-- Any Kakeya set in `ℝ` has full Hausdorff dimension. -/
+theorem dimH_kakeya_eq_one (K : Set ℝ) (hK : IsKakeya K) :
+    dimH K = 1 := by
+  rcases kakeya_contains_unit_Icc hK with ⟨x₀, hsub⟩
+  exact le_antisymm (dimH_le_one_univ K) (dimH_of_contains_Icc hsub)
 
--- /-- Any Kakeya set in `ℝ` has full Hausdorff dimension. -/
+
+-- /-- A Kakeya subset of ℝ has full Hausdorff dimension. -/
 -- theorem dimH_kakeya_eq_one (K : Set ℝ) (hK : IsKakeya K) :
 --     dimH K = 1 := by
---   rcases kakeya_contains_unit_Icc hK with ⟨x₀, hsub⟩
---   exact le_antisymm (dimH_le_one_univ K) (dimH_of_contains_Icc hsub)
-
--- /-- Kakeya conjecture in ℝ: there exists a Kakeya set of Hausdorff dimension 1. -/
--- theorem one_dim_kakeya_conjecture : ∃ s : Set ℝ, IsKakeya s ∧ dimH s = 1 := by
---   refine ⟨closedBall (0 : ℝ) 1, ⟨IsKakeya.ball, dimH_kakeya_eq_one _ IsKakeya.ball⟩⟩
-
-
-/-- A Kakeya subset of ℝ has full Hausdorff dimension. -/
-theorem dimH_kakeya_eq_one (K : Set ℝ)
-  (hK : IsKakeya K) :
-    dimH K = 1 := by
-  rw [IsKakeya] at hK
-  specialize hK 1
-  simp only [norm_one, le_add_iff_nonneg_right, zero_le_one, segment_eq_Icc, forall_const] at hK
-  rcases hK with ⟨x₀, hseg⟩
-  have hIcc_sub : Icc x₀ (x₀ + 1) ⊆ K := by
-    simpa [segment_eq_Icc (by linarith : x₀ ≤ x₀ + 1)] using hseg
-  have hlow : 1 ≤ dimH K := by
-    have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
-      have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
-        rw [interior_Icc]; simp
-      calc
-        dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
-        _ = 1 := by simp
-    calc
-      1 = dimH (Icc x₀ (x₀ + 1)) := eq1.symm
-      _ ≤ dimH K := by apply dimH_mono; exact hseg
-  have hup : dimH K ≤ 1 := by
-    calc
-      dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ K)
-      _ = Module.finrank ℝ ℝ := by simp only [Module.finrank_self, Nat.cast_one, dimH_univ]
-      _ = 1 := by simp
-  exact le_antisymm hup hlow
-
-open ENNReal NNReal MeasureTheory Measure Filter Topology EMetric
+--   rw [IsKakeya] at hK
+--   specialize hK 1
+--   simp only [norm_one, le_add_iff_nonneg_right, zero_le_one, segment_eq_Icc, forall_const] at hK
+--   rcases hK with ⟨x₀, hseg⟩
+--   have hIcc_sub : Icc x₀ (x₀ + 1) ⊆ K := by
+--     simpa [segment_eq_Icc (by linarith : x₀ ≤ x₀ + 1)] using hseg
+--   have hlow : 1 ≤ dimH K := by
+--     have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
+--       have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
+--         rw [interior_Icc]; simp
+--       calc
+--         dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
+--         _ = 1 := by simp
+--     calc
+--       1 = dimH (Icc x₀ (x₀ + 1)) := eq1.symm
+--       _ ≤ dimH K := by apply dimH_mono; exact hseg
+--   have hup : dimH K ≤ 1 := by
+--     calc
+--       dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ K)
+--       _ = Module.finrank ℝ ℝ := by simp only [Module.finrank_self, Nat.cast_one, dimH_univ]
+--       _ = 1 := by simp
+--   exact le_antisymm hup hlow
 
 /-@b-mehta's formulation of Prop 3.2 of Fox (needs to be PR by BM)-/
 theorem asdf {X : Type*} [EMetricSpace X] [MeasurableSpace X] [BorelSpace X] {s : ℝ} (hs : 0 ≤ s) (E : Set X) :
@@ -1929,8 +1952,7 @@ theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
 theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
   simpa using (lt_top_iff_ne_top).1 dimH_lt_top
 
-/- Proposition 3.4 (Fox):
-For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
+/-- For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
   observe dimHA_ne_top : dimH A ≠ ⊤
