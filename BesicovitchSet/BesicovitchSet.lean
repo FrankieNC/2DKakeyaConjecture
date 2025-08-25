@@ -1425,49 +1425,6 @@ theorem P_v_eps_compl_nowhereDense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤
   simp_rw [isClosed_isNowhereDense_iff_compl, compl_compl]
   exact ⟨P_v_eps_open hv₀ hv₁ hε, P_v_eps_dense hv₀ hv₁ hε⟩
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-/--
-In a Baire space, every nonempty open set is non‐meagre,
-that is, it cannot be written as a countable union of nowhere‐dense sets.
--/
-theorem not_isMeagre_of_isOpen {X : Type*} {s : Set X} [TopologicalSpace X] [BaireSpace X]
-  (hs : IsOpen s) (hne : s.Nonempty) :
-    ¬ IsMeagre s := by
-  intro h
-  rcases (dense_of_mem_residual (by rwa [IsMeagre] at h)).inter_open_nonempty s hs hne
-    with ⟨x, hx, hxc⟩
-  exact hxc hx
-
-/-- A set of second category (i.e. non-meagre) is nonempty. -/
-lemma nonempty_of_not_IsMeagre {X : Type*} [TopologicalSpace X] {s : Set X} (hs : ¬IsMeagre s) : s.Nonempty := by
-  contrapose! hs
-  simpa [hs] using (IsMeagre.empty)
-
-/-- In a nonempty Baire space, any dense `Gδ` set is not meagre. -/
-theorem IsGδ_dense_not_meagre {X : Type*} [Nonempty X] [TopologicalSpace X] [BaireSpace X] {s : Set X} (hs : IsGδ s) (hd : Dense s) : ¬ IsMeagre s := by
-  intro h
-  rcases (mem_residual).1 h with ⟨t, hts, htG, hd'⟩
-  rcases (hd.inter_of_Gδ hs htG hd').nonempty with ⟨x, hx₁, hx₂⟩
-  exact (hts hx₂) hx₁
-
-/-- In a nonempty Baire space, a residual (comeagre) set is not meagre. -/
-lemma not_isMeagre_of_mem_residual {X : Type*} [TopologicalSpace X]
-    [BaireSpace X] [Nonempty X] {s : Set X} (hs : s ∈ residual X) :
-    ¬ IsMeagre s := by
-  -- From `mem_residual`, pick a dense Gδ subset `t ⊆ s`.
-  rcases (mem_residual (X := X)).1 hs with ⟨t, ht_sub, htGδ, ht_dense⟩
-  -- Dense Gδ sets aren’t meagre in a nonempty Baire space.
-  -- If `s` were meagre, then so would be `t ⊆ s`, contradiction.
-  intro hs_meagre
-  exact not_isMeagre_of_isGδ_of_dense htGδ ht_dense (hs_meagre.mono ht_sub)
-
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 theorem extra_exists_seq_strictAnti_tendsto :
     ∃ φ : ℕ → ℝ≥0,
       StrictAnti φ
@@ -1883,63 +1840,19 @@ lemma dimH_le_one_univ : ∀ (K : Set ℝ), dimH K ≤ 1 := fun K ↦ by
     _ = 1 := by simp
 
 /-- Any Kakeya set in `ℝ` has full Hausdorff dimension. -/
-theorem dimH_kakeya_eq_one (K : Set ℝ) (hK : IsKakeya K) :
+theorem isKakeya.dimH_eq_one (K : Set ℝ) (hK : IsKakeya K) :
     dimH K = 1 := by
   rcases kakeya_contains_unit_Icc hK with ⟨x₀, hsub⟩
   exact le_antisymm (dimH_le_one_univ K) (dimH_of_contains_Icc hsub)
 
+-- This result has been formalised by Bhavik Mehta in a private repository,
+-- and will soon be added to Mathlib
 
--- /-- A Kakeya subset of ℝ has full Hausdorff dimension. -/
--- theorem dimH_kakeya_eq_one (K : Set ℝ) (hK : IsKakeya K) :
---     dimH K = 1 := by
---   rw [IsKakeya] at hK
---   specialize hK 1
---   simp only [norm_one, le_add_iff_nonneg_right, zero_le_one, segment_eq_Icc, forall_const] at hK
---   rcases hK with ⟨x₀, hseg⟩
---   have hIcc_sub : Icc x₀ (x₀ + 1) ⊆ K := by
---     simpa [segment_eq_Icc (by linarith : x₀ ≤ x₀ + 1)] using hseg
---   have hlow : 1 ≤ dimH K := by
---     have eq1 : dimH (Icc x₀ (x₀ + 1)) = 1 := by
---       have nin : (interior (Icc x₀ (x₀ + 1))).Nonempty := by
---         rw [interior_Icc]; simp
---       calc
---         dimH (Icc x₀ (x₀ + 1)) = Module.finrank ℝ ℝ := Real.dimH_of_nonempty_interior nin
---         _ = 1 := by simp
---     calc
---       1 = dimH (Icc x₀ (x₀ + 1)) := eq1.symm
---       _ ≤ dimH K := by apply dimH_mono; exact hseg
---   have hup : dimH K ≤ 1 := by
---     calc
---       dimH K ≤ dimH (univ : Set ℝ) := dimH_mono (subset_univ K)
---       _ = Module.finrank ℝ ℝ := by simp only [Module.finrank_self, Nat.cast_one, dimH_univ]
---       _ = 1 := by simp
---   exact le_antisymm hup hlow
-
-/-@b-mehta's formulation of Prop 3.2 of Fox (needs to be PR by BM)-/
-theorem asdf {X : Type*} [EMetricSpace X] [MeasurableSpace X] [BorelSpace X] {s : ℝ} (hs : 0 ≤ s) (E : Set X) :
+/-- For any set `E` and any nonnegative `s : ℝ`, there exists a Gδ set `G` containing `E`
+with the same `s`-dimensional Hausdorff measure. -/
+theorem exists_Gδ_superset_hausdorffMeasure_eq {X : Type*} [EMetricSpace X] [MeasurableSpace X] [BorelSpace X] {s : ℝ} (hs : 0 ≤ s) (E : Set X) :
     ∃ G : Set X, IsGδ G ∧ E ⊆ G ∧ μH[s] G = μH[s] E := by
   sorry
-
-theorem dimH_eq_iInf' {X : Type*}
-  [EMetricSpace X] [MeasurableSpace X] [BorelSpace X]
-  (s : Set X) :
-    dimH s = ⨅ (d : ℝ≥0) (_ : μH[d] s = 0), (d : ℝ≥0∞) := by
-  borelize X
-  rw [dimH_def]
-  apply le_antisymm
-  · simp only [le_iInf_iff, iSup_le_iff, ENNReal.coe_le_coe]
-    intro i hi j hj
-    by_contra! hij
-    simpa [hi, hj] using hausdorffMeasure_mono (le_of_lt hij) s
-  · by_contra! h
-    rcases ENNReal.lt_iff_exists_nnreal_btwn.1 h with ⟨d', hdim_lt, hlt⟩
-    have h0 : μH[d'] s = 0 := by
-      apply hausdorffMeasure_of_dimH_lt
-      rw [dimH_def]
-      exact hdim_lt
-    have hle : (⨅ (d'' : ℝ≥0) (_ : μH[d''] s = 0), (d'' : ℝ≥0∞)) ≤ (d' : ℝ≥0∞) := by
-      exact iInf₂_le d' h0
-    exact lt_irrefl _ (hlt.trans_le hle)
 
 /-- A subset of `ℝⁿ` has finite Hausdorff dimension. -/
 theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
@@ -1965,7 +1878,7 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     tendsto_nhdsWithin_mono_right
       (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
   choose G' hG'_Gδ subG' meas_eq' using
-    fun k : ℕ ↦ asdf (coe_nonneg (DA + φ k)) A
+    fun k : ℕ ↦ exists_Gδ_superset_hausdorffMeasure_eq (coe_nonneg (DA + φ k)) A
   let G := ⋂ k, G' k
   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
@@ -2012,11 +1925,10 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   rw [← hA]
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
-
-/-- Proposition 3.7 (slicing): if `A ⊆ ℝⁿ` has finite `s`-dimensional Hausdorff measure,
+/-- If `A ⊆ ℝⁿ` has finite `s`-dimensional Hausdorff measure,
     then for any `k ≤ s` and any `k`-plane `W`, the slices
     `A ∩ (Wᗮ + x)` have finite `(s - k)`-measure for `μH[k]`-almost all `x ∈ W`. -/
-theorem prop_3_7_slicing
+theorem hausdorffMeasure_slicing
   (n : ℕ)
   (A : Set (EuclideanSpace ℝ (Fin n))) (hA : MeasurableSet A)
   (s : ℝ) (hs : μH[s] A < ⊤)
@@ -2026,5 +1938,71 @@ theorem prop_3_7_slicing
   ∀ᵐ x ∂ (μH[(k : ℝ)]).restrict (W : Set (EuclideanSpace ℝ (Fin n))),
     μH[s - k] (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
   sorry
+
+end
+
+section
+
+/-
+This section collects the results that were contributed to Mathlib as part of this project.
+-/
+
+open Measure
+
+theorem dimH_eq_iInf' {X : Type*}
+  [EMetricSpace X] [MeasurableSpace X] [BorelSpace X]
+  (s : Set X) :
+    dimH s = ⨅ (d : ℝ≥0) (_ : μH[d] s = 0), (d : ℝ≥0∞) := by
+  borelize X
+  rw [dimH_def]
+  apply le_antisymm
+  · simp only [le_iInf_iff, iSup_le_iff, ENNReal.coe_le_coe]
+    intro i hi j hj
+    by_contra! hij
+    simpa [hi, hj] using hausdorffMeasure_mono (le_of_lt hij) s
+  · by_contra! h
+    rcases ENNReal.lt_iff_exists_nnreal_btwn.1 h with ⟨d', hdim_lt, hlt⟩
+    have h0 : μH[d'] s = 0 := by
+      apply hausdorffMeasure_of_dimH_lt
+      rw [dimH_def]
+      exact hdim_lt
+    have hle : (⨅ (d'' : ℝ≥0) (_ : μH[d''] s = 0), (d'' : ℝ≥0∞)) ≤ (d' : ℝ≥0∞) := by
+      exact iInf₂_le d' h0
+    exact lt_irrefl _ (hlt.trans_le hle)
+
+/--
+In a Baire space, every nonempty open set is non‐meagre,
+that is, it cannot be written as a countable union of nowhere‐dense sets.
+-/
+theorem not_isMeagre_of_isOpen' {X : Type*} {s : Set X} [TopologicalSpace X] [BaireSpace X]
+  (hs : IsOpen s) (hne : s.Nonempty) :
+    ¬ IsMeagre s := by
+  intro h
+  rcases (dense_of_mem_residual (by rwa [IsMeagre] at h)).inter_open_nonempty s hs hne
+    with ⟨x, hx, hxc⟩
+  exact hxc hx
+
+/-- A set of second category (i.e. non-meagre) is nonempty. -/
+lemma nonempty_of_not_IsMeagre' {X : Type*} [TopologicalSpace X] {s : Set X} (hs : ¬IsMeagre s) : s.Nonempty := by
+  contrapose! hs
+  simpa [hs] using (IsMeagre.empty)
+
+/-- In a nonempty Baire space, any dense `Gδ` set is not meagre. -/
+theorem IsGδ_dense_not_meagre' {X : Type*} [Nonempty X] [TopologicalSpace X] [BaireSpace X] {s : Set X} (hs : IsGδ s) (hd : Dense s) : ¬ IsMeagre s := by
+  intro h
+  rcases (mem_residual).1 h with ⟨t, hts, htG, hd'⟩
+  rcases (hd.inter_of_Gδ hs htG hd').nonempty with ⟨x, hx₁, hx₂⟩
+  exact (hts hx₂) hx₁
+
+/-- In a nonempty Baire space, a residual (comeagre) set is not meagre. -/
+lemma not_isMeagre_of_mem_residual' {X : Type*} [TopologicalSpace X]
+    [BaireSpace X] [Nonempty X] {s : Set X} (hs : s ∈ residual X) :
+    ¬ IsMeagre s := by
+  -- From `mem_residual`, pick a dense Gδ subset `t ⊆ s`.
+  rcases (mem_residual (X := X)).1 hs with ⟨t, ht_sub, htGδ, ht_dense⟩
+  -- Dense Gδ sets aren’t meagre in a nonempty Baire space.
+  -- If `s` were meagre, then so would be `t ⊆ s`, contradiction.
+  intro hs_meagre
+  exact not_isMeagre_of_isGδ_of_dense htGδ ht_dense (hs_meagre.mono ht_sub)
 
 end
