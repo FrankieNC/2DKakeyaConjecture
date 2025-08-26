@@ -7,9 +7,30 @@ Authors: Francesco Nishanil Chotuck, Bhavik Mehta
 import BesicovitchSet.KakeyaSet
 import Mathlib.Topology.MetricSpace.HausdorffDimension
 
+/-!
+# Kakeya in one and two dimensions
+
+This file collects basic results and conjectural statements about Kakeya sets
+in low dimensions.
+
+
+## Main statements
+
+* In one dimension, any Kakeya set has full Hausdorff dimension:
+  `dimH K = 1`. (Section `Kakeya1D`.)
+
+* We also formalise a key technical result required for the proof:
+  `exists_Gδ_of_dimH`, which shows that any subset of `ℝⁿ` can be thickened to a
+  `Gδ` set of the same Hausdorff dimension.
+
+## References
+
+TO DO
+-/
+
 open Set Topology Real NNReal MeasureTheory Measure Filter
 
-section
+namespace Kakeya1D
 
 /-- Any Kakeya set in `ℝ` contains a closed unit‐length interval. -/
 lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
@@ -47,9 +68,9 @@ theorem isKakeya.dimH_eq_one (K : Set ℝ) (hK : IsKakeya K) :
   rcases kakeya_contains_unit_Icc hK with ⟨x₀, hsub⟩
   exact le_antisymm (dimH_le_one_univ K) (dimH_of_contains_Icc hsub)
 
-end
+end Kakeya1D
 
-section
+namespace Kakeya2D
 
 -- This result has been formalised by Bhavik Mehta in a private repository,
 -- and will soon be added to Mathlib
@@ -148,4 +169,4 @@ theorem hausdorffMeasure_slicing
     μH[s - k] (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
   sorry
 
-end
+end Kakeya2D
