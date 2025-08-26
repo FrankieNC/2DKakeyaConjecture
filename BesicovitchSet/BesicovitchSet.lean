@@ -1266,11 +1266,11 @@ theorem P_col'_IsClosed : IsClosed P_collection' := by
 
 -- https://proofwiki.org/wiki/Subspace_of_Complete_Metric_Space_is_Closed_iff_Complete
 /-- The space `P_collection'` is complete. -/
-theorem CompleteSpace_P_collection' : CompleteSpace P_collection' :=
+instance CompleteSpace_P_collection' : CompleteSpace P_collection' :=
   IsClosed.completeSpace_coe P_col'_IsClosed
 
 /-- The space `P_collection'` has the Baire property. -/
-theorem BaireSpace_P_collection' [CompleteSpace P_collection'] : BaireSpace P_collection' :=
+instance BaireSpace_P_collection' : BaireSpace P_collection' :=
   BaireSpace.of_pseudoEMetricSpace_completeSpace
 
 noncomputable section
@@ -1626,8 +1626,6 @@ lemma IsGδ_Pstar
   · exact fun n r a ↦ zero_le (↑r * φ n)
   · exact fun n r a ↦ hv1 n r a
 
-variable [BaireSpace P_collection']
-
 lemma Dense_Pn (n : ℕ)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
@@ -1705,13 +1703,33 @@ lemma Pstar_sub_E_set
     · exact hu
   have lim : Tendsto (fun n ↦ 100 * φ n) atTop (𝓝 0) := by
     simpa [zero_mul] using (tendsto_const_nhds.mul h₃φ)
+  set c : ℝ := (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal with hc
+  by_contra! hpos
+  have c_le_zero : c ≤ 0 := by
+    by_contra hpos
+    have hpos' : 0 < c := lt_of_not_ge hpos
+    obtain ⟨N, hN⟩ := (Metric.tendsto_atTop.mp lim) (c / 2) (by positivity)
+    have hN' := hN N le_rfl
+    have nonneg_N : 0 ≤ 100 * φ N := by
+      have : 0 < φ N := (h₂φ N).1
+      exact mul_nonneg (by norm_num) (le_of_lt this)
+    have : 100 * φ N < c / 2 := by
+      sorry
+      -- simpa [Real.dist_eq, sub_zero, abs_of_nonneg nonneg_N] using hN'
+    have : c ≤ c / 2 := (bound N).trans_lt this |>.le
+    linarith
+  -- Also `0 ≤ c` since `ENNReal.toReal` is always nonnegative.
+  have zero_le_c : 0 ≤ c := by simp [hc]
+  have : c = 0 := le_antisymm c_le_zero zero_le_c
+  rw [hc] at c_le_zero zero_le_c this
   sorry
 
-theorem thm2_5
+theorem E_set_not_meagre
     (h : Pstar φ ⊆ E_set)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
-    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) : ¬ IsMeagre E_set := by
+    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+    ¬ IsMeagre E_set := by
   intro hM
   apply IsMeagre.mono at h
   · exact (Pstar_notMeagre φ hφ hv0 hv1) h
@@ -1781,29 +1799,27 @@ theorem E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
   -- rw [MeasureTheory.Measure.volume_eq_prod]
   -- Fubini argument?
 
-
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
-theorem theorem_2_3
-    (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
-    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
-    (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+theorem P_zero_vol_not_meagre
+    (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     ¬ IsMeagre P_zero_vol := by
   intro h
+  exact E_set_not_meagre φ (Pstar_sub_E_set φ h₁φ h₂φ h₃φ hv0 hv1) h₂φ hv0 hv1 (h.mono E_sub_P_zero_vol)
 
-  sorry
-  -- exact (thm2_5 φ (Pstar_sub_E_set φ)) (h.mono E_sub_P_zero_vol)
-
-theorem Exists_P0 (φ : ℕ → ℝ≥0) : P_zero_vol.Nonempty := by
-  apply nonempty_of_not_isMeagre
-  apply theorem_2_3
-  all_goals sorry
-  -- nonempty_of_not_isMeagre (theorem_2_3 φ)
+/-- There exists at least one `P ∈ 𝒫` whose Lebesgue measure is zero. -/
+theorem exists_P_with_zero_volume
+    (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
+    P_zero_vol.Nonempty :=
+  nonempty_of_not_isMeagre (P_zero_vol_not_meagre φ h₁φ h₂φ h₃φ hv0 hv1)
 
 end
 
 end
 
 end Besicovitch
+
 
 section
 
@@ -1848,9 +1864,12 @@ theorem isKakeya.dimH_eq_one (K : Set ℝ) (hK : IsKakeya K) :
 -- This result has been formalised by Bhavik Mehta in a private repository,
 -- and will soon be added to Mathlib
 
-/-- For any set `E` and any nonnegative `s : ℝ`, there exists a Gδ set `G` containing `E`
+/-- For any set `E` and any non-negative `s : ℝ`, there exists a `Gδ` set `G` containing `E`
 with the same `s`-dimensional Hausdorff measure. -/
-theorem exists_Gδ_superset_hausdorffMeasure_eq {X : Type*} [EMetricSpace X] [MeasurableSpace X] [BorelSpace X] {s : ℝ} (hs : 0 ≤ s) (E : Set X) :
+theorem exists_Gδ_superset_hausdorffMeasure_eq
+    {X : Type*}
+    [EMetricSpace X] [MeasurableSpace X] [BorelSpace X]
+    {s : ℝ} (hs : 0 ≤ s) (E : Set X) :
     ∃ G : Set X, IsGδ G ∧ E ⊆ G ∧ μH[s] G = μH[s] E := by
   sorry
 
@@ -1865,7 +1884,7 @@ theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
 theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
   simpa using (lt_top_iff_ne_top).1 dimH_lt_top
 
-/-- For any subset `A` of `ℝⁿ` there is a G₀‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
+/-- For any subset `A` of `ℝⁿ` there is a `Gδ`‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
   observe dimHA_ne_top : dimH A ≠ ⊤
@@ -1943,9 +1962,6 @@ end
 
 section
 
-/--
--/
-
 /-
 This section collects the results that were contributed to Mathlib as part of this project.
 -/
@@ -2009,3 +2025,5 @@ lemma not_isMeagre_of_mem_residual' {X : Type*} [TopologicalSpace X]
   exact not_isMeagre_of_isGδ_of_dense htGδ ht_dense (hs_meagre.mono ht_sub)
 
 end
+
+#min_imports
