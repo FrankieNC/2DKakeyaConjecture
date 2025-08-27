@@ -36,7 +36,6 @@ namespace Kakeya1D
 lemma kakeya_contains_unit_Icc {K : Set ℝ} (hK : IsKakeya K) :
     ∃ x₀, Icc x₀ (x₀ + 1) ⊆ K := by
   have := hK 1 (by simp)
-  -- simp only [segment_eq_Icc, norm_one] at this
   rcases this with ⟨x₀, hseg⟩
   exact ⟨x₀, by simpa using hseg⟩
 
@@ -98,22 +97,21 @@ theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
 /-- For any subset `A` of `ℝⁿ` there is a `Gδ`‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
-  observe dimHA_ne_top : dimH A ≠ ⊤
-  observe dimHA_nt_top : dimH A < ⊤
   generalize hA : dimH A = DA
-  have : DA ≠ ⊤ := Ne.symm (ne_of_ne_of_eq (id (Ne.symm dimHA_ne_top)) hA)
+  have : DA ≠ ⊤ := Ne.symm (ne_of_ne_of_eq (id (Ne.symm dimH_ne_top)) hA)
   lift DA to ℝ≥0 using this
   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
-    tendsto_nhdsWithin_mono_right
-      (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
+    tendsto_nhdsWithin_mono_right (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
   choose G' hG'_Gδ subG' meas_eq' using
     fun k : ℕ ↦ exists_Gδ_superset_hausdorffMeasure_eq (coe_nonneg (DA + φ k)) A
   let G := ⋂ k, G' k
   have iGδ : IsGδ G := IsGδ.iInter fun k ↦ hG'_Gδ k
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
   have hge : dimH A ≤ dimH G := dimH_mono Asub
-  have hle : dimH G ≤ dimH A := dimH_le fun d' hd' ↦ by
+  have hle : dimH G ≤ dimH A := by
+    apply dimH_le
+    intro d' hd'
     by_contra! hgt
     have hd_pos : 0 < (d' : ℝ≥0) - DA := by aesop
     rw [Metric.tendsto_atTop] at h₃φ

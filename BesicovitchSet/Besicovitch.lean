@@ -26,10 +26,10 @@ lemma rectangle_isBounded : IsBounded rectangle := by simp [rectangle, isBounded
 lemma rectangle_isClosed : IsClosed rectangle := by
   simpa [rectangle] using (isClosed_Icc : IsClosed (Icc ![(-1 : ℝ), 0] ![1, 1]))
 
-lemma rectangle_convex : Convex ℝ rectangle := by simp [rectangle, convex_Icc]
+lemma rectangle.convex : Convex ℝ rectangle := by simp [rectangle, convex_Icc]
 
 /-- `rectangle` is nonempty. We use `![0,0]` as the witness. -/
-lemma rectangle_nonempty : (rectangle : Set (Fin 2 → ℝ)).Nonempty := by
+lemma rectangle.nonempty : (rectangle : Set (Fin 2 → ℝ)).Nonempty := by
   refine ⟨![0,0], ?_⟩
   simp [rectangle, Pi.le_def, Fin.forall_fin_two]
 
@@ -66,7 +66,7 @@ def Krect : NonemptyCompacts (Fin 2 → ℝ) :=
     -- `rectangle` is a product of closed intervals, hence compact.
     simpa [rectangle] using (isCompact_Icc : IsCompact (Icc ![(-1 : ℝ), 0] ![1, 1]))⟩,
     -- The point `(0,0)` lies in the rectangle.
-    by exact rectangle_nonempty⟩
+    by exact rectangle.nonempty⟩
 
 /-- Endpoints `![a,0]` and `![b,1]` of our standard segments lie in `rectangle`
 whenever `a,b ∈ [-1,1]`. -/
@@ -119,7 +119,7 @@ lemma Union_segments_subset_rectangle :
     ⟨by simpa using hp_bounds.1 1, by simpa using hp_bounds.2 1⟩
   -- Endpoints belong to the rectangle; convexity gives the whole segment.
   obtain ⟨hL, hR⟩ := endpoints_mem_rectangle ha hb
-  exact rectangle_convex.segment_subset hL hR hxSeg
+  exact rectangle.convex.segment_subset hL hR hxSeg
 
 
 /-- The rectangle is exactly the union of all standard segments `segment01 (p 0) (p 1)`
@@ -156,7 +156,7 @@ lemma rectangle_property_ii :
         have : |v| ≤ (1 : ℝ) := (le_trans hv (by norm_num : (1/2 : ℝ) ≤ 1))
         simpa [Icc, abs_le] using this
       simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
-    exact rectangle_convex.segment_subset hL hR
+    exact rectangle.convex.segment_subset hL hR
 
 /-- `𝒫` is nonempty: the rectangle itself (as a compact nonempty set) satisfies
 all clauses of the definition. -/
@@ -415,7 +415,7 @@ theorem infDist_pos_of_mem_limit_notin_rectangle {k' : Fin 2 → ℝ} (h_notin :
   have h0 : infDist k' (rectangle : Set _) = 0 := le_antisymm (le_of_not_gt h) infDist_nonneg
   -- hence `k' ∈ closure rectangle`
   have hk_cl : k' ∈ closure (rectangle : Set (Fin 2 → ℝ)) := by
-    simpa [mem_closure_iff_infDist_zero, rectangle_nonempty] using h0
+    simpa [mem_closure_iff_infDist_zero, rectangle.nonempty] using h0
   -- but `rectangle` is closed, contradiction
   have : k' ∈ rectangle := by simpa [rectangle_isClosed.closure_eq] using hk_cl
   exact h_notin this
@@ -1182,6 +1182,26 @@ instance CompleteSpace_P_collection' : CompleteSpace P_collection' :=
 instance BaireSpace_P_collection' : BaireSpace P_collection' :=
   BaireSpace.of_pseudoEMetricSpace_completeSpace
 
+
+-- HMM Illegal behaviour probs
+
+-- lemma isOpen_measurableSet_borel_explicit
+--   {α} [TopologicalSpace α] {s : Set α} (hs : IsOpen s) :
+--   @MeasurableSet α (borel α) s := by exact MeasurableSpace.measurableSet_generateFrom hs
+
+-- lemma isClosed_measurableSet_borel_explicit
+--     {α} [TopologicalSpace α] {s : Set α} (hs : IsClosed s) :
+--     @MeasurableSet α (borel α) s := by
+--   have : @MeasurableSet α (borel α) sᶜ :=
+--     isOpen_measurableSet_borel_explicit (α := α) (s := sᶜ) hs.isOpen_compl
+--   simpa [MeasurableSet.compl_iff] using this
+
+-- instance yes {P : Set (Fin 2 → ℝ)} (hP : P ∈ P_collection) :
+--      @MeasurableSet (Fin 2 → ℝ) (borel (Fin 2 → ℝ)) P := by
+--   rcases hP with ⟨h, -, -, -⟩
+--   apply isClosed_measurableSet_borel_explicit at h
+--   exact h
+
 noncomputable section
 
 /-- A closed, axis–aligned rectangle `[x₁,x₂] × [y₁,y₂]`
@@ -1239,12 +1259,6 @@ lemma hasThinCover_singleton (v ε : ℝ) (x : Fin 2 → ℝ) (hε : 0 < ε) :
 def P_v_eps' (v ε : ℝ) : Set P_collection' :=
   {P | hasThinCover (P : Set _) v ε}
 
--- /-- Nonemptiness of `𝒫(v, ε)` for every `v, ε > 0`. -/
--- theorem P_v_eps'.nonempty {v ε : ℝ} (hε : 0 < ε) :
---     (P_v_eps' v ε).Nonempty := by
---   -- choose the vertical segment at `x = 0`
---   sorry
-
 /-- helper: expand an axis-aligned rectangle by `η` in both directions -/
 def axisRectExpand (η a b c d : ℝ) : Set (Fin 2 → ℝ) :=
   axisRect (a - η) (b + η) (c - η) (d + η)
@@ -1293,46 +1307,87 @@ lemma mem_expand_of_close {a b c d η : ℝ} {p q : Fin 2 → ℝ}
   split_ands
   all_goals linarith
 
-/-- If every `r ∈ R` is an axis rectangle, we can *choose* parameters for each of them. -/
-lemma choose_axis_params
-    {R : Finset (Set (Fin 2 → ℝ))}
-    (h_rects : ∀ r ∈ R, ∃ a b c d : ℝ, r = axisRect a b c d) :
-    ∃ (a b c d : ∀ r, r ∈ R → ℝ), ∀ r (hr : r ∈ R), r = axisRect (a r hr) (b r hr) (c r hr) (d r hr) := by
-  have H : ∀ r ∈ R, ∃ t : ℝ × ℝ × ℝ × ℝ,
-      r = axisRect t.1 t.2.1 t.2.2.1 t.2.2.2 := by
-    intro r hr
-    rcases h_rects r hr with ⟨a,b,c,d,hr'⟩
-    exact ⟨(a,b,c,d), by simp [hr']⟩
-  choose t ht using H
-  let a : ∀ r, r ∈ R → ℝ := fun r hr => (t r hr).1
-  let b : ∀ r, r ∈ R → ℝ := fun r hr => (t r hr).2.1
-  let c : ∀ r, r ∈ R → ℝ := fun r hr => (t r hr).2.2.1
-  let d : ∀ r, r ∈ R → ℝ := fun r hr => (t r hr).2.2.2
-  refine ⟨a,b,c,d,?_⟩
-  intro r hr; simpa [a,b,c,d] using ht r hr
-
-theorem P_v_eps_open {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+theorem isOpen_P_v_eps' {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsOpen (P_v_eps' v ε) := by
   rw [Metric.isOpen_iff]
   intro P hP
   rcases hP with ⟨R, h_rects, h_cover, h_len⟩
-  rcases choose_axis_params h_rects with ⟨a,b,c,d,hr⟩
   sorry
-  -- choose a b c d h_abcd using h_rects
-  -- set R' : Finset (Set (Fin 2 → ℝ)) := {axisRectExpand η a b c d} with hR'
-  -- refine ⟨R', ?_, ?_, ?_⟩
-  -- · sorry
-  -- · sorry
-  -- · sorry
 
-theorem P_v_eps_dense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
+theorem dense_P_v_eps' {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     Dense (P_v_eps' v ε) := by
   sorry
 
 theorem P_v_eps_compl_nowhereDense {v ε : ℝ} (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hε : 0 < ε) :
     IsClosed (P_v_eps' v ε)ᶜ ∧ IsNowhereDense (P_v_eps' v ε)ᶜ := by
   simp_rw [isClosed_isNowhereDense_iff_compl, compl_compl]
-  exact ⟨P_v_eps_open hv₀ hv₁ hε, P_v_eps_dense hv₀ hv₁ hε⟩
+  exact ⟨isOpen_P_v_eps' hv₀ hv₁ hε, dense_P_v_eps' hv₀ hv₁ hε⟩
+
+/-- The basic seed we will use everywhere. -/
+def phi (n : ℕ) : ℝ≥0 := 1 / (n + 2 : ℝ≥0)
+
+/-- `phi` is strictly decreasing. -/
+lemma phi_strictAnti : StrictAnti phi := by
+  intro a b hlt
+  -- Prove on ℝ and cast back
+  have : (1 : ℝ) / (b + 2) < 1 / (a + 2) := by
+    have pos : (0 : ℝ) < a + 2 := by exact_mod_cast Nat.succ_pos (a + 1)
+    have lt' : (a + 2 : ℝ) < (b + 2 : ℝ) := by exact_mod_cast add_lt_add_right hlt 2
+    simpa using one_div_lt_one_div_of_lt pos lt'
+  exact this
+
+/-- Each term of `phi` lies in `(0,1)`. -/
+lemma phi_mem_Ioo (n : ℕ) : phi n ∈ Set.Ioo 0 1 := by
+  simp only [phi, one_div, mem_Ioo, inv_pos, add_pos_iff, Nat.cast_pos, Nat.ofNat_pos, or_true,
+    true_and]
+  exact inv_lt_one_of_one_lt₀ (by exact_mod_cast Nat.succ_lt_succ (Nat.succ_pos n))
+
+/-- `phi n → 0`. -/
+lemma tendsto_phi_zero : Tendsto phi atTop (𝓝 (0 : ℝ≥0)) := by
+  -- Prove on `ℝ` and pull back
+  have h : Tendsto (fun n : ℕ ↦ (1 : ℝ) / n) atTop (𝓝 0) :=
+    tendsto_const_div_atTop_nhds_zero_nat (1 : ℝ)
+  have : Tendsto (fun n : ℕ ↦ (1 : ℝ) / (n + 2)) atTop (𝓝 0) := by
+    simpa using (tendsto_add_atTop_iff_nat 2).2 h
+  simpa using (NNReal.tendsto_coe.1 this)
+
+example : Tendsto (fun n : ℕ ↦ (1 : ℝ) / (n + 2)) atTop (𝓝 0) := by
+  -- 1 / n → 0 as n → ∞ (n : ℕ, values in ℝ)
+  have h : Tendsto (fun n : ℕ ↦ (1 : ℝ) / n) atTop (𝓝 0) :=
+    _root_.tendsto_const_div_atTop_nhds_zero_nat (1 : ℝ)
+  -- shift the index by 2
+  simpa using (tendsto_add_atTop_iff_nat 2).2 h
+
+lemma mul_nonneg_range (n r : ℕ) (_ : r ∈ Finset.range n) :
+    (0 : ℝ≥0) ≤ (r : ℝ≥0) * phi n := by
+  simp [phi]
+
+/-- For `r < n`, we have `r * phi n ≤ 1`. -/
+lemma mul_le_one_on_range (n r : ℕ) (hr : r ∈ Finset.range n) :
+    (r : ℝ≥0) * phi n ≤ 1 := by
+  -- `r ≤ n ≤ n+2`, then multiply by the positive `phi n = 1/(n+2)`
+  have hr' : (r : ℝ≥0) ≤ n := by exact_mod_cast (Finset.mem_range.1 hr).le
+  have pos : 0 < phi n := (phi_mem_Ioo n).1
+  have step1 : (r : ℝ≥0) * phi n ≤ (n : ℝ≥0) * phi n :=
+    mul_le_mul_of_nonneg_right hr' (le_of_lt pos)
+  have step2 : (n : ℝ≥0) * phi n ≤ ((n + 2 : ℕ) : ℝ≥0) * phi n :=
+    mul_le_mul_of_nonneg_right (by exact_mod_cast Nat.le_add_right n 2) (le_of_lt pos)
+  have hne : ((n + 2 : ℕ) : ℝ≥0) ≠ 0 := by simp
+  have : ((n + 2 : ℕ) : ℝ≥0) * phi n = 1 := by simp [phi]
+  exact (step1.trans (step2.trans (by aesop)))
+
+theorem exists_strictAnti_seq_Ioo_tendsto_zero_with_range_mul_le_one :
+  ∃ φ : ℕ → ℝ≥0,
+    StrictAnti φ
+    ∧ (∀ n, φ n ∈ Set.Ioo 0 1)
+    ∧ Tendsto φ atTop (𝓝 0)
+    ∧ (∀ n r, r ∈ Finset.range n → 0 ≤ (r : ℝ≥0) * φ n)
+    ∧ (∀ n r, r ∈ Finset.range n → (r : ℝ≥0) * φ n ≤ 1) := by
+  refine ⟨phi, phi_strictAnti, (fun n ↦ phi_mem_Ioo n), tendsto_phi_zero, ?_, ?_⟩
+  · exact fun n r hr ↦ mul_nonneg_range n r hr
+  · exact fun n r hr ↦ mul_le_one_on_range n r hr
+
+#exit
 
 theorem extra_exists_seq_strictAnti_tendsto :
     ∃ φ : ℕ → ℝ≥0,
@@ -1502,6 +1557,12 @@ def Pn (φ : ℕ → ℝ≥0) (n : ℕ) : Set P_collection' :=
 
 variable (φ : ℕ → ℝ≥0)
 
+/-- Expand membership in `Pn` to the finset form. -/
+@[simp]
+lemma mem_Pn (n : ℕ) {x : P_collection'} :
+    x ∈ Pn φ n ↔ ∀ r ∈ Finset.range n, x ∈ P_v_eps' ((r : ℝ) * (φ n : ℝ)) (φ n) := by
+  simp [Pn]
+
 lemma isOpen_Pn (n : ℕ)
     (hφ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1)
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
@@ -1510,7 +1571,7 @@ lemma isOpen_Pn (n : ℕ)
   rw [Pn]
   refine isOpen_biInter_finset ?_
   intro r hr
-  exact P_v_eps_open (hv0 n r hr) (hv1 n r hr) ((hφ n).1)
+  exact isOpen_P_v_eps' (hv0 n r hr) (hv1 n r hr) ((hφ n).1)
 
 lemma measure_Pn (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n)
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
@@ -1519,9 +1580,21 @@ lemma measure_Pn (n : ℕ) (P : P_collection') (hP : P ∈ Pn φ n) (hv0 : ∀ n
   simp_rw [Pn, Finset.mem_range, mem_iInter, P_v_eps', hasThinCover, hSlice, window] at hP
   simp_rw [hSlice]
   sorry
-  -- exact (ENNReal.toReal_mono hμmono).trans_lt.this.le
 
 def Pstar (φ : ℕ → ℝ≥0) : Set P_collection' := ⋂ n : ℕ, Pn φ n
+
+@[simp]
+lemma mem_Pstar {x : P_collection'} :
+    x ∈ Pstar φ ↔ ∀ n, x ∈ Pn φ n := by
+  simp [Pstar]
+
+/-- `P⋆ ⊆ Pₙ` for every `n`. -/
+lemma Pstar_subset_Pn (n : ℕ) : Pstar φ ⊆ Pn φ n := by
+  intro x hx
+  simp only [Pstar, mem_iInter, mem_Pn, Finset.mem_range] at hx
+  simp only [mem_Pn, Finset.mem_range]
+  intro r hr
+  exact hx n r hr
 
 /-- `Pstar(φ)` is a Gδ set: countable intersection of open sets. -/
 lemma IsGδ_Pstar
@@ -1545,20 +1618,11 @@ lemma Dense_Pn (n : ℕ)
   all_goals intro i
   · apply isOpen_iInter_of_finite
     intro hi
-    exact P_v_eps_open (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
+    exact isOpen_P_v_eps' (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
   · apply dense_iInter_of_isOpen
     all_goals intro hi
-    · exact P_v_eps_open (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
-    · exact P_v_eps_dense (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
-
---(h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
-
--- include h₁φ h₂φ
-
--- Is this necessary?
--- theorem P_v_eps'_not_meagre {v ε : ℝ} (h0 : 0 ≤ v) (h1 : v ≤ 1) (hε : 0 < ε) :
---     ¬ IsMeagre (P_v_eps' v ε) :=
---   not_isMeagre_of_isOpen (P_v_eps_open h0 h1 hε) (P_v_eps'_nonempty h0 h1 hε)
+    · exact isOpen_P_v_eps' (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
+    · exact dense_P_v_eps' (hv0 n i hi) (hv1 n i hi) ((hφ n).1)
 
 /-- `Pstar(φ)` is dense: countable intersection of open dense sets. -/
 lemma Dense_Pstar
@@ -1601,7 +1665,6 @@ lemma Pstar_sub_E_set
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     Pstar φ ⊆ E_set := by
   intro P hP u hu
-  -- refine le_antisymm ?_ (by positivity)
   have bound : ∀ n, (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal ≤ 100 * φ n := by
     intro n
     apply measure_Pn
@@ -1612,25 +1675,7 @@ lemma Pstar_sub_E_set
     · exact hu
   have lim : Tendsto (fun n ↦ 100 * φ n) atTop (𝓝 0) := by
     simpa [zero_mul] using (tendsto_const_nhds.mul h₃φ)
-  set c : ℝ := (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal with hc
-  by_contra! hpos
-  have c_le_zero : c ≤ 0 := by
-    by_contra hpos
-    have hpos' : 0 < c := lt_of_not_ge hpos
-    obtain ⟨N, hN⟩ := (Metric.tendsto_atTop.mp lim) (c / 2) (by positivity)
-    have hN' := hN N le_rfl
-    have nonneg_N : 0 ≤ 100 * φ N := by
-      have : 0 < φ N := (h₂φ N).1
-      exact mul_nonneg (by norm_num) (le_of_lt this)
-    have : 100 * φ N < c / 2 := by
-      sorry
-      -- simpa [Real.dist_eq, sub_zero, abs_of_nonneg nonneg_N] using hN'
-    have : c ≤ c / 2 := (bound N).trans_lt this |>.le
-    linarith
-  -- Also `0 ≤ c` since `ENNReal.toReal` is always nonnegative.
-  have zero_le_c : 0 ≤ c := by simp [hc]
-  have : c = 0 := le_antisymm c_le_zero zero_le_c
-  rw [hc] at c_le_zero zero_le_c this
+  apply le_antisymm _ (by positivity)
   sorry
 
 theorem E_set_not_meagre
@@ -1646,7 +1691,7 @@ theorem E_set_not_meagre
 
 def P_zero_vol : Set P_collection' := {P | volume (P : Set (Fin 2 → ℝ)) = 0}
 
-lemma aux {P : Set (ℝ × ℝ)} (hP : P ⊆ Icc (-1, 0) (1, 1))
+lemma measure_zero_of_vertical_slices_zero {P : Set (ℝ × ℝ)} (hP : P ⊆ Icc (-1, 0) (1, 1))
     (hP' : ∀ y ∈ Icc 0 1, volume {x ∈ Icc (-1) 1 | (x, y) ∈ P} = 0) :
     volume P = 0 := by
   sorry
@@ -1666,47 +1711,55 @@ lemma mem_prod_Icc_of_mem_P {P : P_collection'} {p : ℝ × ℝ}
   · exact hx
   · exact hy
 
-theorem E_sub_P_zero_vol : E_set ⊆ P_zero_vol := by
+lemma preimage_finTwoArrow (P : Set (Fin 2 → ℝ)) (y : ℝ) :
+    {x | x ∈ Icc 0 1 ∧ (x, y) ∈ (fun p : ℝ × ℝ ↦ Fin.cons p.1 (Fin.cons p.2 finZeroElim)) ⁻¹' P}
+    =
+    {x | x ∈ Icc 0 1 ∧ (![x, y] : Fin 2 → ℝ) ∈ P} := by
+  ext x
+  simp only [mem_Icc, Nat.reduceAdd, mem_preimage, mem_setOf_eq, Nat.succ_eq_add_one,
+    and_congr_right_iff, and_imp]
+  intro hx0 hx1
+  constructor
+  all_goals
+    intro h
+    exact h
+
+lemma slice_null_of_param
+    {P : Set (Fin 2 → ℝ)}
+    (hP : ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (↑↑P) u) = 0)
+    {y : ℝ} (hy : y ∈ Icc 0 1) :
+  volume {x | (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _)} = 0 := by
+  simpa [hSlice] using hP y hy
+
+lemma restrict_Icc_sub_null
+    {S : Set ℝ} (hS : volume S = 0) :
+  volume {x | x ∈ Icc (-1 : ℝ) 1 ∧ x ∈ S} = 0 := by
+  refine measure_mono_null ?hsub hS
+  intro x hx
+  exact mem_of_mem_inter_right hx
+
+theorem E_set_subset_PzeroVol : E_set ⊆ P_zero_vol := by
   intro P hP
   simp_rw [P_zero_vol, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
-  have := (MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ))
-  rw [← MeasureTheory.Measure.volume_eq_prod, ← MeasureTheory.volume_pi] at this
-  rw [← this.symm.setLIntegral_comp_preimage_emb]
+  have hMP := (MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ))
+  rw [← MeasureTheory.Measure.volume_eq_prod, ← MeasureTheory.volume_pi] at hMP
+  rw [← hMP.symm.setLIntegral_comp_preimage_emb]
   apply le_antisymm _ (by positivity)
   simp only [MeasurableEquiv.finTwoArrow_symm_apply, lintegral_const, MeasurableSet.univ,
     Measure.restrict_apply, univ_inter, one_mul, nonpos_iff_eq_zero]
-  apply aux
-  · intro p hp
+  apply measure_zero_of_vertical_slices_zero
+  · -- points from `P` live in the product rectangle
+    intro p hp
     exact mem_prod_Icc_of_mem_P hp
-  · intro y hy
-    have : volume (hSlice (↑↑P) y) = 0 := (hP : ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (↑↑P) u) = 0) y hy
-    have hset :
-    {x | x ∈ Icc 0 1 ∧ (x, y) ∈ (fun p : ℝ × ℝ ↦ Fin.cons p.1 (Fin.cons p.2 finZeroElim)) ⁻¹' (P : Set (Fin 2 → ℝ)) }
-      = {x | x ∈ Icc 0 1 ∧ (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } := by
-      ext x
-      simp only [mem_Icc, Nat.reduceAdd, mem_preimage, SetLike.mem_coe, mem_setOf_eq,
-        Nat.succ_eq_add_one, and_congr_right_iff, and_imp]
-      intro hx0 hx1
-      constructor
-      all_goals
-        intro h
-        exact h
-    have hsubset :
-    {x | x ∈ Icc (-1 : ℝ) 1 ∧ (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) }
-      ⊆ {x | (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } := by
-      intro x hx
-      exact hx.2
-    have hslice_zero : volume {x | (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } = 0 := by
-      simpa [hSlice] using this
-    -- A subset of a null set is null
-    have : volume {x | x ∈ Icc (-1 : ℝ) 1 ∧ (![x,y] : Fin 2 → ℝ) ∈ (↑↑P : Set _) } = 0 :=
-      measure_mono_null hsubset hslice_zero
-    simpa [hset]
+  · -- each horizontal section is null, hence also its restriction to `Icc (-1) 1`
+    intro y hy
+    have h0 : volume {x | (![x,y] : Fin 2 → ℝ) ∈ (P : Set _)} = 0 := by
+      apply slice_null_of_param _ hy
+      intro u hu
+      exact hP u hu
+    simpa [preimage_finTwoArrow (P := (P : Set _)) y] using
+      restrict_Icc_sub_null h0
   · exact MeasurableEquiv.measurableEmbedding MeasurableEquiv.finTwoArrow.symm
-
-  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Integral/Lebesgue/Basic.html#MeasureTheory.lintegral_const
-  -- rw [MeasureTheory.Measure.volume_eq_prod]
-  -- Fubini argument?
 
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
 theorem P_zero_vol_not_meagre
@@ -1714,7 +1767,7 @@ theorem P_zero_vol_not_meagre
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     ¬ IsMeagre P_zero_vol := by
   intro h
-  exact E_set_not_meagre φ (Pstar_sub_E_set φ h₁φ h₂φ h₃φ hv0 hv1) h₂φ hv0 hv1 (h.mono E_sub_P_zero_vol)
+  exact E_set_not_meagre φ (Pstar_sub_E_set φ h₁φ h₂φ h₃φ hv0 hv1) h₂φ hv0 hv1 (h.mono E_set_subset_PzeroVol)
 
 /-- There exists at least one `P ∈ 𝒫` whose Lebesgue measure is zero. -/
 theorem exists_P_with_zero_volume
