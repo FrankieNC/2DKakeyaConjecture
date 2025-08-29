@@ -1294,7 +1294,7 @@ horizontal slice has Lebesgue measure zero. -/
 def E_set : Set P_collection' := {P | ∀ u ∈ Icc (0 : ℝ) 1, volume (hSlice (P : Set (Fin 2 → ℝ)) u) = 0}
 
 lemma Pstar_sub_E_set
-    (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (h₃φ : Tendsto φ atTop (𝓝 0))
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     Pstar φ ⊆ E_set := by
   intro P hP u hu
@@ -1306,10 +1306,33 @@ lemma Pstar_sub_E_set
     · exact fun n r a ↦ hv0 n r a
     · exact fun n r a ↦ hv1 n r a
     · exact hu
-  have lim : Tendsto (fun n ↦ 100 * φ n) atTop (𝓝 0) := by
-    simpa [zero_mul] using (tendsto_const_nhds.mul h₃φ)
-  apply le_antisymm _ (by positivity)
-  sorry
+  -- have hlim : Tendsto (fun n ↦ 100 * φ n) atTop (𝓝 0) := by
+  --   simpa [zero_mul] using (tendsto_const_nhds.mul h₃φ)
+  have hφR : Tendsto (fun n : ℕ ↦ (φ n : ℝ)) atTop (𝓝 (0 : ℝ)) := by
+    simpa using (NNReal.tendsto_coe.2 h₃φ)
+  have hlimR : Tendsto (fun n : ℕ ↦ (100 : ℝ) * (φ n : ℝ)) atTop (𝓝 (0 : ℝ)) := by
+    simpa [zero_mul] using (tendsto_const_nhds.mul hφR)
+  have hfin : volume (hSlice (P : Set (Fin 2 → ℝ)) u) < ⊤ := by
+    have hsub : hSlice (P : Set (Fin 2 → ℝ)) u ⊆ Icc (-1 : ℝ) 1 := by
+      intro x hx
+      have hRect : (↑↑P : Set (Fin 2 → ℝ)) ⊆ Icc ![-1, 0] ![1, 1] := (P.prop).2.1
+      have hxRect : (![x, u] : Fin 2 → ℝ) ∈ Icc ![-1, 0] ![1, 1] := hRect hx
+      rcases hxRect with ⟨hlo, hhi⟩
+      simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Pi.le_def, Fin.forall_fin_two, Fin.isValue,
+        Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one] at hlo hhi
+      exact ⟨hlo.1, hhi.1⟩
+    have : volume (hSlice (P : Set (Fin 2 → ℝ)) u) ≤ volume (Icc (-1 : ℝ) 1) := measure_mono hsub
+    exact lt_of_le_of_lt this (by simp)
+  have hle0 : (volume (hSlice (P : Set (Fin 2 → ℝ)) u)).toReal ≤ 0 := by
+    refine le_of_forall_pos_le_add (fun ε hε ↦ ?_)
+    rcases (Metric.tendsto_atTop.1 hlimR) ε hε with ⟨N, hN⟩
+    have hN' : (100 : ℝ) * (φ N : ℝ) < 0 + ε := by simpa [zero_add] using hN N le_rfl
+    exact (bound N).trans (le_of_lt hN')
+  set μ := volume (hSlice (↑↑P) u) with hμ
+  have htr0 : μ.toReal = 0 := le_antisymm hle0 ENNReal.toReal_nonneg
+  rcases (ENNReal.toReal_eq_zero_iff μ).1 htr0 with h | h
+  · exact h
+  · aesop
 
 theorem E_set_not_meagre
     (h : Pstar φ ⊆ E_set)
@@ -1384,7 +1407,9 @@ theorem E_set_subset_PzeroVol : E_set ⊆ P_zero_vol := by
             have hyI : y ∈ Icc (0 : ℝ) 1 := by
               have hxRect : (![x,y] : Fin 2 → ℝ) ∈ Icc ![-1,0] ![1,1] := hRect hxP
               rcases hxRect with ⟨hlo, hhi⟩
-              simp [Pi.le_def, Fin.forall_fin_two] at hlo hhi
+              simp only [Nat.succ_eq_add_one, Nat.reduceAdd, Pi.le_def, Fin.forall_fin_two,
+                Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one,
+                Matrix.cons_val_fin_one] at hlo hhi
               exact ⟨hlo.2, hhi.2⟩
             exact (hy hyI).elim
           · intro hx
@@ -1396,17 +1421,17 @@ theorem E_set_subset_PzeroVol : E_set ⊆ P_zero_vol := by
 
 /-- The set of `P ∈ 𝒫` with Lebesgue measure zero is of second category in `(𝒫, d)`. -/
 theorem P_zero_vol_not_meagre
-    (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     ¬ IsMeagre P_zero_vol := by
   intro h
-  exact E_set_not_meagre φ (Pstar_sub_E_set φ h₁φ h₂φ h₃φ hv0 hv1) h₂φ hv0 hv1 (h.mono E_set_subset_PzeroVol)
+  exact E_set_not_meagre φ (Pstar_sub_E_set φ h₃φ hv0 hv1) h₂φ hv0 hv1 (h.mono E_set_subset_PzeroVol)
 
 /-- There exists at least one `P ∈ 𝒫` whose Lebesgue measure is zero. -/
 theorem exists_P_with_zero_volume
-    (h₁φ : StrictAnti φ) (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (h₂φ : ∀ (n : ℕ), φ n ∈ Set.Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
     (hv0 : ∀ n r, r ∈ Finset.range n → 0 ≤ r * φ n) (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     P_zero_vol.Nonempty :=
-  nonempty_of_not_isMeagre (P_zero_vol_not_meagre φ h₁φ h₂φ h₃φ hv0 hv1)
+  nonempty_of_not_isMeagre (P_zero_vol_not_meagre φ h₂φ h₃φ hv0 hv1)
 
 #lint
