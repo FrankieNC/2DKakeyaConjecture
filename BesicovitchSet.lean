@@ -1,4 +1,4 @@
 import BesicovitchSet.Besicovitch
-import BesicovitchSet.BesicovitchSet
 import BesicovitchSet.KakeyaConjecture
 import BesicovitchSet.KakeyaSet
+import BesicovitchSet.«Korner2-2»
