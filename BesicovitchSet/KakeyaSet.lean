@@ -120,3 +120,5 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
   -- Converse: `∀ v, ‖v‖ ≤ 1 → ... ⇒ IsKakeya s`
   · intro h_segment v hv
     exact h_segment v hv.le
+
+#lint
