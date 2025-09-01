@@ -637,26 +637,28 @@ theorem exists_mem_Pn_close_to
 /-- If each `Pₙ` converges to `K` in the Hausdorff metric,
 then the selected points `pₙ` in `Pₙ n`that stay within `dist K (Pₙ n)` of `k`
 converge to `k` as `n → ∞`. -/
--- theorem tendsto_select_points
---     {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)} {K : NonemptyCompacts (Fin 2 → ℝ)}
---     (h_lim : ∀ ε > 0, ∃ N, ∀ n ≥ N, dist (Pₙ n) K < ε) :
---       ∀ (pₙ : (k : Fin 2 → ℝ) → k ∈ K → ℕ → Fin 2 → ℝ),
---           (∀ (k : Fin 2 → ℝ) (a : k ∈ K) (n : ℕ), pₙ k a n ∈ Pₙ n) →
---             (∀ (k : Fin 2 → ℝ) (a : k ∈ K) (n : ℕ), dist (pₙ k a n) k ≤ dist K (Pₙ n)) →
---               ∀ (k : Fin 2 → ℝ) (hk : k ∈ K), Tendsto (fun n ↦ pₙ k hk n) atTop (𝓝 k) := by
---   intro pₙ hpₙ hdist k hk
---   rw [NormedAddCommGroup.tendsto_atTop']
---   intro ε hε
---   obtain ⟨N, hN⟩ := h_lim ε hε
---   refine ⟨N, fun n hn ↦ ?_⟩
---   have h_le : dist (pₙ k hk n) k ≤ dist K (Pₙ n) := by apply hdist
---   have h_small : dist K (Pₙ n) < ε := by
---     simpa [dist_comm] using hN n (Nat.le_of_lt hn)
---   exact lt_of_le_of_lt h_le h_small
 
-#lint
+theorem tendsto_select_points
+    {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)} {K : NonemptyCompacts (Fin 2 → ℝ)}
+    (h_lim : ∀ ε > 0, ∃ N, ∀ n ≥ N, dist (Pₙ n) K < ε) :
+  ∀ (pₙ : (k : Fin 2 → ℝ) → k ∈ K → ℕ → Fin 2 → ℝ),
+      (∀ k (hk : k ∈ K) n, dist (pₙ k hk n) k ≤ dist K (Pₙ n)) →
+      ∀ k (hk : k ∈ K), Tendsto (fun n ↦ pₙ k hk n) atTop (𝓝 k) := by
+  intro pₙ hle k hk
+  -- Use the metric characterization of `Tendsto`:
+  -- `dist (pₙ k hk n) k → 0`.
+  refine (tendsto_iff_dist_tendsto_zero).2 ?_
+  refine Metric.tendsto_atTop.2 ?_
+  intro ε hε
+  obtain ⟨N, hN⟩ := h_lim ε hε
+  refine ⟨N, ?_⟩
+  intro n hn
+  have h_le' : dist (dist (pₙ k hk n) k) 0 ≤ dist K (Pₙ n) := by
+    simpa [Real.dist_eq, abs_of_nonneg (dist_nonneg)] using hle k hk n
+  have h_small : dist K (Pₙ n) < ε := by
+    simpa [dist_comm] using hN n hn
+  exact lt_of_le_of_lt h_le' h_small
 
-#exit
 /--
 If `Pₙ ∈ P_collection'` and `Pₙ → K` in the Hausdorff metric, then `K` also satisfies
 the segment property: for every `|v| ≤ 1/2` there exist `x₁, x₂ ∈ [-1,1]` with
@@ -794,7 +796,7 @@ theorem P_collection'_IsClosed : IsClosed P_collection' := by
       all_goals intro hk
       · choose pₙ hpₙ_mem hpₙ_lt using exists_mem_Pn_close_to fin_dist
         refine mem_iUnion_segment_of_limit h_mem h_lim h_closed fin_dist pₙ hpₙ_mem ?_ hA ?_ ?_ ?_
-        · apply tendsto_select_points h_lim pₙ hpₙ_mem hpₙ_lt
+        · apply tendsto_select_points h_lim pₙ hpₙ_lt
         · exact sep_subset (Icc ![-1, -1] ![1, 1]) fun x ↦ segment01 (x 0) (x 1) ⊆ ↑K
         · exact hk
       · rcases mem_iUnion₂.1 hk with ⟨_, hpA, hk_seg⟩
