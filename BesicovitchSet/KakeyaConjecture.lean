@@ -8,7 +8,6 @@ import BesicovitchSet.KakeyaSet
 import Mathlib.Topology.MetricSpace.HausdorffDimension
 import Mathlib.MeasureTheory.Measure.Hausdorff
 import Mathlib.Order.CompletePartialOrder
-import Mathlib
 
 /-!
 # Kakeya in one and two dimensions
@@ -26,9 +25,6 @@ in low dimensions.
   `exists_Gδ_of_dimH`, which shows that any subset of `ℝⁿ` can be thickened to a
   `Gδ` set of the same Hausdorff dimension.
 
-## References
-
-TO DO
 -/
 
 open Set Topology Real NNReal ENNReal MeasureTheory Measure Filter EMetric MetricSpace Metric

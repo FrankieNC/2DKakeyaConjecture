@@ -26,9 +26,6 @@ This file defines **Kakeya sets** in real normed vector spaces.
 * `IsKakeya.nonempty` : in a nontrivial space, any Kakeya set is nonempty.
 * `isKakeya_iff_sub_unit` : it suffices to check the condition for vectors of norm ≤ 1.
 
-## References
-
-TO DO
 -/
 
 open Metric

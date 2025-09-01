@@ -11,6 +11,45 @@ import Mathlib.GroupTheory.MonoidLocalization.Basic
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Topology.MetricSpace.Closeds
 
+/-!
+# Besicovitch–Kakeya sets via Baire category (after Körner)
+
+This file develops the Baire category construction of a planar Besicovitch set,
+following Körner’s paper "Besicovitch via Baire".
+
+
+## Main definitions
+
+* `IsBesicovitch s` : a Kakeya set in `ℝⁿ` of Lebesgue measure zero.
+* `rectangle : Set (Fin 2 → ℝ)` : the closed strip `[-1,1] × [0,1]`.
+* `segment01 (x₁ x₂ : ℝ) : Set (Fin 2 → ℝ)` : the segment from `(x₁,0)` to `(x₂,1)`.
+* `P_collection` : subsets `P ⊆ rectangle` which are (i) unions of such segments and
+  (ii) “span” all horizontal differences `v` with `|v| ≤ 1/2`.
+* `P_collection'` : the same class, viewed as a subset of `NonemptyCompacts (Fin 2 → ℝ)`.
+* `hasThinCover P v ε` : Körner’s “thin cover” condition at slope `v` and thickness `ε`.
+* `P_v_eps' v ε` : elements of `P_collection'` admitting a thin cover at `(v, ε)`.
+* `Pn φ n`, `Pstar φ` : intersections of `P_v_eps'` along a decreasing scale `φ : ℕ → ℝ≥0`.
+
+## Main results
+
+* `P_collection'_IsClosed : IsClosed P_collection'`.
+  In particular, `(P_collection', dist)` is a complete Baire space.
+* Openness/density of thin-cover conditions: `IsOpen (P_v_eps' v ε)` and `Dense (P_v_eps' v ε)`.
+* `IsGδ_Pstar` and `Dense_Pstar` : `Pstar φ` is a dense `Gδ` subset of `P_collection'`.
+* Slicing estimates imply `Pstar φ ⊆ E_set`, where `E_set` consists of those
+  `P ∈ P_collection'` whose every horizontal slice has Lebesgue measure `0`.
+  Consequently there exists `P ∈ P_collection'` with `volume (P : Set _) = 0`.
+
+The metric/compactness part relies on Hausdorff convergence in `NonemptyCompacts`,
+together with quantitative control of segments by their endpoints.
+
+## References
+
+* T. W. Körner, *Besicovitch via Baire*, Studia Math. 158 (2003), no. 1, 65–78.
+  [EuDML link](http://eudml.org/doc/284499)
+
+-/
+
 open Set Topology Metric Bornology TopologicalSpace MeasureTheory NNReal Filter
 
 /-- A Besicovitch set in `ℝⁿ` is a Kakeya set of Lebesgue measure zero. -/
