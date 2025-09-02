@@ -308,6 +308,53 @@ theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
 theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
   simpa using (lt_top_iff_ne_top).1 dimH_lt_top
 
+theorem dimH_eq_of_Gδ_superset {n : ℕ} (A : Set (Fin n → ℝ)) (DA : ℝ≥0) (hA : dimH A = ↑DA)
+    (φ : ℕ → ℝ≥0) (h₂φ : ∀ (n : ℕ), φ n ∈ Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
+    (G' : ℕ → Set (Fin n → ℝ)) (meas_eq' : ∀ (k : ℕ), μH[↑(DA + φ k)] (G' k) = μH[↑(DA + φ k)] A) :
+    let G := ⋂ k, G' k;
+    IsGδ G → A ⊆ G → dimH A ≤ dimH G → dimH G ≤ dimH A := by
+  intro G hG _ _
+  apply dimH_le
+  intro d' hd'
+  by_contra! hgt
+  have hd_pos : 0 < (d' : ℝ≥0) - DA := by aesop
+  rw [Metric.tendsto_atTop] at h₃φ
+  rcases h₃φ _ hd_pos with ⟨k, hφk_lt⟩
+  generalize hD : DA + φ k = D
+  specialize h₂φ k
+  simp only [mem_Ioo] at h₂φ
+  cases' h₂φ with hφk_gt_0 hφk_lt_1
+  have hlt : DA < D := by
+    linear_combination hD + hφk_gt_0
+  have hμA : μH[D] A = 0 := by
+    apply hausdorffMeasure_of_dimH_lt
+    rw [hA]
+    norm_cast
+  have hμGk : μH[D] (G' k) = 0 := by
+    rw [← hD, meas_eq', hD, hμA]
+  have hmono : μH[d'] G ≤ μH[D] (G' k) := by
+    calc
+      μH[d'] G ≤ μH[d'] (G' k) := by
+        apply measure_mono
+        exact iInter_subset_of_subset k fun ⦃a⦄ a ↦ a
+      _ ≤ μH[D] (G' k) := by
+        apply hausdorffMeasure_mono
+        apply le_of_lt
+        rw [← hD]
+        simp only [NNReal.coe_add]
+        specialize hφk_lt k
+        norm_cast
+        simp only [ge_iff_le, le_refl, val_eq_coe, dist_lt_coe, nndist_zero_eq_val',
+          forall_const] at hφk_lt
+        rw [lt_tsub_iff_left] at hφk_lt
+        exact hφk_lt
+  have h0 : μH[d'] G = 0 := by
+    have hbot : μH[d'] G ≤ 0 := by
+      apply hmono.trans_eq
+      exact hμGk
+    exact le_bot_iff.1 hbot
+  simp [h0] at hd'
+
 /-- For any subset `A` of `ℝⁿ` there is a `Gδ`‐set `G` with `A ⊆ G` and `dimH G = dimH A`. -/
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
@@ -316,7 +363,8 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   lift DA to ℝ≥0 using this
   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
-    tendsto_nhdsWithin_mono_right (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
+    tendsto_nhdsWithin_mono_right
+      (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
   choose G' hG'_Gδ subG' meas_eq' using
     fun k : ℕ ↦ exists_Gδ_superset_hausdorffMeasure_eq (coe_nonneg (DA + φ k)) A
   let G := ⋂ k, G' k
@@ -324,46 +372,8 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   have Asub : A ⊆ G := subset_iInter fun k ↦ subG' k
   have hge : dimH A ≤ dimH G := dimH_mono Asub
   have hle : dimH G ≤ dimH A := by
-    apply dimH_le
-    intro d' hd'
-    by_contra! hgt
-    have hd_pos : 0 < (d' : ℝ≥0) - DA := by aesop
-    rw [Metric.tendsto_atTop] at h₃φ
-    rcases h₃φ _ hd_pos with ⟨k, hφk_lt⟩
-    generalize hD : DA + φ k = D
-    specialize h₂φ k
-    simp only [mem_Ioo] at h₂φ
-    cases' h₂φ with hφk_gt_0 hφk_lt_1
-    have hlt : DA < D := by
-      linear_combination hD + hφk_gt_0
-    have hμA : μH[D] A = 0 := by
-      apply hausdorffMeasure_of_dimH_lt
-      rw [hA]
-      norm_cast
-    have hμGk : μH[D] (G' k) = 0 := by
-      rw [← hD, meas_eq', hD, hμA]
-    have hmono : μH[d'] G ≤ μH[D] (G' k) := by
-      calc
-        μH[d'] G ≤ μH[d'] (G' k) := by
-          apply measure_mono
-          exact iInter_subset_of_subset k fun ⦃a⦄ a ↦ a
-        _ ≤ μH[D] (G' k) := by
-          apply hausdorffMeasure_mono
-          apply le_of_lt
-          rw [← hD]
-          simp only [NNReal.coe_add]
-          specialize hφk_lt k
-          norm_cast
-          simp only [ge_iff_le, le_refl, val_eq_coe, dist_lt_coe, nndist_zero_eq_val',
-            forall_const] at hφk_lt
-          rw [lt_tsub_iff_left] at hφk_lt
-          exact hφk_lt
-    have h0 : μH[d'] G = 0 := by
-      have hbot : μH[d'] G ≤ 0 := by
-        apply hmono.trans_eq
-        exact hμGk
-      exact le_bot_iff.1 hbot
-    simp [h0] at hd'
+    exact dimH_eq_of_Gδ_superset
+      (A:=A) (DA:=DA) (φ:=φ) (G':=G') hA h₂φ h₃φ meas_eq' iGδ Asub hge
   rw [← hA]
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
