@@ -41,7 +41,7 @@ def IsKakeya {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (s : Set E) 
 lemma univ_isKakeya : IsKakeya (Set.univ : Set E) := by simp [IsKakeya]
 
 /-- If `s` is Kakeya and `s ⊆ t`, then `t` is Kakeya. -/
-theorem IsKakeya_subset {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
+theorem IsKakeya.mono {s t : Set E} (h : IsKakeya s) (hs : s ⊆ t) : IsKakeya t := by
    -- To show `t` is Kakeya, fix an arbitrary unit direction `v`.
   intro v hv
   -- From the Kakeya property of `s`, get a base point `x` such that the unit segment
