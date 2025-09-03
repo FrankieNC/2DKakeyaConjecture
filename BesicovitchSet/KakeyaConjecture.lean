@@ -297,17 +297,6 @@ theorem exists_Gδ_superset_hausdorffMeasure_eq
 
 -- What follows is the contribution of Francesco Chotuck.
 
-/-- A subset of `ℝⁿ` has finite Hausdorff dimension. -/
-theorem dimH_lt_top {n : ℕ} {A : Set (Fin n → ℝ)} :
-    dimH A < ⊤ := by
-  calc
-    dimH A ≤ dimH (Set.univ : Set (Fin n → ℝ)) := dimH_mono (by simp)
-    _ = n := dimH_univ_pi_fin n
-    _ < ⊤ := by simp
-
-theorem dimH_ne_top {n : ℕ} {A : Set (Fin n → ℝ)} : dimH A ≠ ⊤ := by
-  simpa using (lt_top_iff_ne_top).1 dimH_lt_top
-
 theorem dimH_eq_of_Gδ_superset {n : ℕ} (A : Set (Fin n → ℝ)) (DA : ℝ≥0) (hA : dimH A = ↑DA)
     (φ : ℕ → ℝ≥0) (h₂φ : ∀ (n : ℕ), φ n ∈ Ioo 0 1) (h₃φ : Tendsto φ atTop (𝓝 0))
     (G' : ℕ → Set (Fin n → ℝ)) (meas_eq' : ∀ (k : ℕ), μH[↑(DA + φ k)] (G' k) = μH[↑(DA + φ k)] A) :
@@ -359,7 +348,7 @@ theorem dimH_eq_of_Gδ_superset {n : ℕ} (A : Set (Fin n → ℝ)) (DA : ℝ≥
 theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
     ∃ G : Set (Fin n → ℝ), IsGδ G ∧ A ⊆ G ∧ dimH G = dimH A := by
   generalize hA : dimH A = DA
-  have : DA ≠ ⊤ := Ne.symm (ne_of_ne_of_eq (id (Ne.symm dimH_ne_top)) hA)
+  have : DA ≠ ⊤ := Ne.symm (ne_of_ne_of_eq (id (Ne.symm (by apply dimH_ne_top))) hA)
   lift DA to ℝ≥0 using this
   obtain ⟨φ, h₁φ, h₂φ, h₃φ⟩ := exists_seq_strictAnti_tendsto' (show (0 : ℝ≥0) < 1 by norm_num)
   have h₄φ : Tendsto φ atTop (𝓝[>] 0) :=
