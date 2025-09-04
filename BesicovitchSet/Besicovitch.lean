@@ -126,7 +126,7 @@ lemma rectangle_subset_Union_segments :
     have hx0 : x 0 ∈ Icc (-1 : ℝ) 1 := by
       change x ∈ rectangle at hx
       simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
-    simpa [Pi.le_def, Fin.forall_fin_two] using And.intro hx0 hx0
+    simpa [Pi.le_def, Fin.forall_fin_two] using hx0
   · -- Write `x` as a convex combination of the endpoints with weights `1 - x 1` and `x 1`.
     have hx1 : x 1 ∈ Icc (0 : ℝ) 1 := by
       change x ∈ rectangle at hx
