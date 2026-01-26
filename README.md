@@ -6,4 +6,4 @@ The central aim of this project is the formalisation of the Kakeya conjecture in
 
 This project mainly focused on formalising the existence of a Besicovitch set in $\mathbb{R}^2$. 
 
-This repository contains the Lean code developed for the formalisation.
+This repository contains the Lean code developed for the formalisation and the associated thesis which you can read [here](CHOTUCK_FRANCESCO_01925507.pdf).
