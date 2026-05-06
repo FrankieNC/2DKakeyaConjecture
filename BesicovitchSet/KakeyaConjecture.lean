@@ -104,8 +104,8 @@ variable {X : Type*} [EMetricSpace X]
 /-- The infimum of `∑ diam (t n) ^ d` over all countable
 covers `(t n)` of `S` by sets in `p` with `diam (t n) ≤ r`.-/
 noncomputable def deltaHausdorffWith (p : Set (Set X)) (d : ℝ) (r : ℝ≥0∞) (S : Set X) : ℝ≥0∞ :=
-  ⨅ (t : ℕ → Set X) (_ : S ⊆ ⋃ n, t n) (_ : ∀ n, diam (t n) ≤ r) (_ : ∀ n, t n ∈ p),
-    ∑' n, ⨆ _ : (t n).Nonempty, diam (t n) ^ d
+  ⨅ (t : ℕ → Set X) (_ : S ⊆ ⋃ n, t n) (_ : ∀ n, ediam (t n) ≤ r) (_ : ∀ n, t n ∈ p),
+    ∑' n, ⨆ _ : (t n).Nonempty, ediam (t n) ^ d
 
 lemma deltaHausdorffWith_antitone_prop {r : ℝ≥0∞} {d : ℝ} {S : Set X} :
     Antitone (deltaHausdorffWith · d r S) :=
@@ -131,20 +131,20 @@ lemma iSup₂_nnreal_deltaHausdorffWith (p : Set (Set X)) (d : ℝ) (S : Set X) 
     exact ⟨r, by simpa using hr⟩
 
 lemma exists_isOpen_diam {E : Set X} (hE : E.Nontrivial) {δ : ℝ≥0} (hδ : 1 < δ) :
-    ∃ U, E ⊆ U ∧ IsOpen U ∧ diam U ≤ δ * diam E := by
+    ∃ U, E ⊆ U ∧ IsOpen U ∧ ediam U ≤ δ * ediam E := by
   have hδ₀ : δ ≠ 0 := by positivity
-  obtain hE | hne := eq_or_ne (diam E) ⊤
+  obtain hE | hne := eq_or_ne (ediam E) ⊤
   · use Set.univ
     simp [hE, hδ₀]
-  lift diam E to ℝ≥0 using hne with dE hdE
-  have hdE' : 0 < dE := by rwa [← EMetric.diam_pos_iff, ← hdE, ENNReal.coe_pos] at hE
+  lift ediam E to ℝ≥0 using hne with dE hdE
+  have hdE' : 0 < dE := by rwa [← ediam_pos_iff, ← hdE, ENNReal.coe_pos] at hE
   let ε : ℝ≥0 := (δ - 1) / 2 * dE
   have hε : 0 < ε := by
     have : 0 < δ - 1 := by simpa
     positivity
   refine ⟨Metric.thickening ε E, Metric.self_subset_thickening (by simpa) _,
     Metric.isOpen_thickening, ?_⟩
-  calc diam (Metric.thickening ε E) ≤ diam E + 2 * ε := Metric.ediam_thickening_le _
+  calc ediam (Metric.thickening ε E) ≤ ediam E + 2 * ε := Metric.ediam_thickening_le _
     _ = dE + 2 * ε := by rw [hdE]
     _ = dE + 2 * ↑((δ - 1) / 2 * dE) := rfl
   norm_cast
@@ -161,33 +161,33 @@ lemma deltaHausdorffWith_isOpen (S : Set X) (d : ℝ) (r : ℝ≥0) (ε : ℝ≥
   refine iInf₂_mono' fun U hU ↦ ?_
   obtain ⟨ν', hν', h'ν'⟩ := ENNReal.exists_pos_sum_of_countable (ε := ν) (by simp [hν.ne']) ℕ
   have U' (n : ℕ) : ∃ V, U n ⊆ V ∧ IsOpen V ∧ (V.Nonempty → (U n).Nonempty) ∧
-      (diam V ≤ ε * diam (U n) ∨ diam (U n) = 0 ∧ diam V ≤ min (ε * r) (ν' n ^ d⁻¹)) := by
+      (ediam V ≤ ε * ediam (U n) ∨ ediam (U n) = 0 ∧ ediam V ≤ min (ε * r) (ν' n ^ d⁻¹)) := by
     obtain h' | h' := (U n).eq_empty_or_nonempty
     · use ∅
       simp [h']
     obtain ⟨x, hx⟩ | h' := h'.exists_eq_singleton_or_nontrivial
-    · refine ⟨EMetric.ball x (min (ε * r) (ν' n ^ d⁻¹) / 2), ?_, ?_, by simp [hx], Or.inr ?_⟩
+    · refine ⟨eball x (min (ε * r) (ν' n ^ d⁻¹) / 2), ?_, ?_, by simp [hx], Or.inr ?_⟩
       · rw [hx, Set.singleton_subset_iff]
-        apply EMetric.mem_ball_self
+        apply mem_eball_self
         have : 0 < ν' n ^ d⁻¹ := NNReal.rpow_pos (hν' n)
         refine ENNReal.div_pos ?_ (by simp)
         positivity
-      · exact isOpen_ball
-      · simp only [hx, EMetric.diam_singleton, true_and]
-        refine diam_ball.trans_eq ?_
+      · exact isOpen_eball
+      · simp only [hx, ediam_singleton, true_and]
+        refine ediam_eball_le.trans_eq ?_
         rw [ENNReal.mul_div_cancel (by simp) (by simp)]
     obtain ⟨V, hV, hV', hV''⟩ := exists_isOpen_diam h' hε
     exact ⟨V, hV, hV', by simp [h'.nonempty], Or.inl hV''⟩
   choose V hUV hVopen hVne hVdiam using U'
   use V, hU.trans (Set.iUnion_mono hUV)
   refine iInf₂_mono' fun h'U h''U ↦ ?_
-  have hVdiam_r (n : ℕ) : diam (V n) ≤ ε * r := by
+  have hVdiam_r (n : ℕ) : ediam (V n) ≤ ε * r := by
     obtain h | h := hVdiam n
-    · exact h.trans (mul_le_mul_left' (h'U n) ε)
+    · exact h.trans (mul_le_mul_right (h'U n) ε)
     · exact h.2.trans (by simp)
   use hVdiam_r, hVopen
-  have h₁ : ∑' (i : ℕ), ((⨆ (_ : (U i).Nonempty), ε ^ d * diam (U i) ^ d) + ν' i) ≤
-      (∑' (i : ℕ), ⨆ (_ : (U i).Nonempty), ε ^ d * diam (U i) ^ d) + ν := by
+  have h₁ : ∑' (i : ℕ), ((⨆ (_ : (U i).Nonempty), ε ^ d * ediam (U i) ^ d) + ν' i) ≤
+      (∑' (i : ℕ), ⨆ (_ : (U i).Nonempty), ε ^ d * ediam (U i) ^ d) + ν := by
     rw [ENNReal.tsum_add]
     gcongr
   refine h₁.trans' <| ENNReal.tsum_le_tsum fun n ↦ ?_
@@ -195,12 +195,12 @@ lemma deltaHausdorffWith_isOpen (S : Set X) (d : ℝ) (r : ℝ≥0) (ε : ℝ≥
   intro hn
   simp only [hVne _ hn, iSup_pos]
   obtain h | ⟨h, h'⟩ := hVdiam n
-  · calc diam (V n) ^ d ≤ (ε * diam (U n)) ^ d := by gcongr
-      _ = ε ^ d * diam (U n) ^ d := by rw [ENNReal.mul_rpow_of_nonneg _ _ hd]
+  · calc ediam (V n) ^ d ≤ (ε * ediam (U n)) ^ d := by gcongr
+      _ = ε ^ d * ediam (U n) ^ d := by rw [ENNReal.mul_rpow_of_nonneg _ _ hd]
       _ ≤ _ := le_self_add
   · obtain rfl | hd := hd.eq_or_lt
     · simp
-    calc diam (V n) ^ d ≤ (min (ε * r) (ν' n ^ d⁻¹)) ^ d := by gcongr
+    calc ediam (V n) ^ d ≤ (min (ε * r) (ν' n ^ d⁻¹)) ^ d := by gcongr
       _ ≤ (ν' n ^ d⁻¹ : ℝ≥0) ^ d := by gcongr; exact min_le_right _ _
       _ = ν' n := by
         rw [ENNReal.coe_rpow_of_nonneg, ENNReal.rpow_inv_rpow hd.ne']
@@ -260,8 +260,8 @@ theorem exists_Gδ_superset_hausdorffMeasure_eq
     tendsto_nhdsWithin_mono_right
       (Set.range_subset_iff.2 (by simp_all)) (tendsto_nhdsWithin_range.2 h₃φ)
   have hc (i : ℕ) : ∃ (U : ℕ → Set X) (hU : E ⊆ ⋃ j, U j)
-      (hU' : ∀ j, diam (U j) ≤ φ i) (hU'' : ∀ j, IsOpen (U j)),
-      ∑' j, ⨆ (_ : (U j).Nonempty), diam (U j) ^ s <
+      (hU' : ∀ j, ediam (U j) ≤ φ i) (hU'' : ∀ j, IsOpen (U j)),
+      ∑' j, ⨆ (_ : (U j).Nonempty), ediam (U j) ^ s <
         deltaHausdorffWith {U | IsOpen U} s (φ i) E + φ i := by
     have h₂ :
         deltaHausdorffWith {U | IsOpen U} s (φ i) E <
@@ -312,7 +312,7 @@ theorem dimH_eq_of_Gδ_superset {n : ℕ} (A : Set (Fin n → ℝ)) (DA : ℝ≥
   generalize hD : DA + φ k = D
   specialize h₂φ k
   simp only [mem_Ioo] at h₂φ
-  cases' h₂φ with hφk_gt_0 hφk_lt_1
+  rcases h₂φ with ⟨hφk_gt_0, hφk_lt_1⟩
   have hlt : DA < D := by
     linear_combination hD + hφk_gt_0
   have hμA : μH[D] A = 0 := by
@@ -366,19 +366,19 @@ theorem exists_Gδ_of_dimH {n : ℕ} (A : Set (Fin n → ℝ)) :
   rw [← hA]
   exact ⟨G, iGδ, Asub, le_antisymm hle hge⟩
 
-/-- If `A ⊆ ℝⁿ` has finite `s`-dimensional Hausdorff measure,
-    then for any `k ≤ s` and any `k`-plane `W`, the slices
-    `A ∩ (Wᗮ + x)` have finite `(s - k)`-measure for `μH[k]`-almost all `x ∈ W`. -/
-theorem hausdorffMeasure_slicing
-  (n : ℕ)
-  (A : Set (EuclideanSpace ℝ (Fin n))) (hA : MeasurableSet A)
-  (s : ℝ) (hs : μH[s] A < ⊤)
-  (k : ℕ) (hks : (k : ℝ) ≤ s)
-  (W : Submodule ℝ (EuclideanSpace ℝ (Fin n))) (hW : Module.finrank ℝ W = k)
-  (direction : W) (x : W) :
-  ∀ᵐ x ∂ (μH[(k : ℝ)]).restrict (W : Set (EuclideanSpace ℝ (Fin n))),
-    μH[s - k] (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
-  sorry
+-- If `A ⊆ ℝⁿ` has finite `s`-dimensional Hausdorff measure,
+    -- then for any `k ≤ s` and any `k`-plane `W`, the slices
+    -- `A ∩ (Wᗮ + x)` have finite `(s - k)`-measure for `μH[k]`-almost all `x ∈ W`. -
+-- theorem hausdorffMeasure_slicing
+--   (n : ℕ)
+--   (A : Set (EuclideanSpace ℝ (Fin n))) (hA : MeasurableSet A)
+--   (s : ℝ) (hs : μH[s] A < ⊤)
+--   (k : ℕ) (hks : (k : ℝ) ≤ s)
+--   (W : Submodule ℝ (EuclideanSpace ℝ (Fin n))) (hW : Module.finrank ℝ W = k)
+--   (direction : W) (x : W) :
+--   ∀ᵐ x ∂ (μH[(k : ℝ)]).restrict (W : Set (EuclideanSpace ℝ (Fin n))),
+--     μH[s - k] (A ∩ (AffineSubspace.mk' x W.orthogonal : Set _)) < ⊤ := by
+--   sorry
 
 end Kakeya2D
 

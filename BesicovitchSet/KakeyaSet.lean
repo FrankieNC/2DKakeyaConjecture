@@ -7,7 +7,8 @@ Authors: Francesco Nishanil Chotuck, Bhavik Mehta
 import Mathlib.Analysis.CStarAlgebra.Basic
 import Mathlib.Analysis.Normed.Group.AddTorsor
 import Mathlib.Analysis.Normed.Module.Convex
-import Mathlib.Analysis.NormedSpace.Real
+import Mathlib.Analysis.Normed.MulAction
+-- import Mathlib.Analysis.NormedSpace.Real
 
 /-!
 # Kakeya sets
@@ -102,7 +103,8 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
         rw [norm_eq_zero] at h₀
         exact h₀
       -- Now `u` has norm 1
-      have h₂ : ‖u‖ = 1 := by field_simp [hu, norm_smul]
+      have h₂ : ‖u‖ = 1 := by
+        simp [hu, norm_smul, inv_mul_cancel₀ h₁]
       -- By IsKakeya, `s` contains segment in direction `u`
       obtain ⟨x, hx⟩ := h_kakeya u h₂
       use x

@@ -312,7 +312,7 @@ lemma hausdorffDist_segments_triangle
         + hausdorffDist (segment ℝ a d) (segment ℝ c d) := by
   -- Hausdorff triangle inequality; segments are nonempty and bounded.
   refine hausdorffDist_triangle ?_
-  refine hausdorffEdist_ne_top_of_nonempty_of_bounded ?_ ?_ ?_ ?_ <;>
+  refine hausdorffEDist_ne_top_of_nonempty_of_bounded ?_ ?_ ?_ ?_ <;>
   first
   | exact ⟨_, left_mem_segment _ _ _⟩
   | exact isBounded_segment _ _
@@ -374,7 +374,7 @@ lemma segment01_isCompact (a b : ℝ) :
 
 /-- The Hausdorff extended distance between two `segment01`s is finite. -/
 lemma hausdorffEdist_ne_top_segment01 (a b a' b' : ℝ) :
-    EMetric.hausdorffEdist (segment01 a b) (segment01 a' b') ≠ ⊤ := by
+    hausdorffEDist (segment01 a b) (segment01 a' b') ≠ ⊤ := by
   -- Each `segment01` is nonempty: it contains its left endpoint.
   have Lne : (segment01 a  b).Nonempty :=
     ⟨![a, 0], by simpa [segment01] using left_mem_segment ℝ ![a,0] ![b,1]⟩
@@ -384,7 +384,7 @@ lemma hausdorffEdist_ne_top_segment01 (a b a' b' : ℝ) :
   have Lbd : IsBounded (segment01 a b) := (segment01_isCompact a b).isBounded
   have Rbd : IsBounded (segment01 a' b') := (segment01_isCompact a' b').isBounded
   -- Finite Hausdorff *e-distance* holds for nonempty, bounded sets.
-  exact hausdorffEdist_ne_top_of_nonempty_of_bounded Lne Rne Lbd Rbd
+  exact hausdorffEDist_ne_top_of_nonempty_of_bounded Lne Rne Lbd Rbd
 
 /-- If `L,T` are `segment01`s, any `y ∈ L` has a point on `T` within the Hausdorff distance. -/
 lemma exists_point_on_segment01_within_HD
@@ -395,7 +395,7 @@ lemma exists_point_on_segment01_within_HD
   obtain ⟨t, ht_mem, ht_eq⟩ := (segment01_isCompact a' b').exists_infDist_eq_dist
     (by refine ⟨![a',0], ?_⟩; simpa [segment01] using left_mem_segment ℝ ![a',0] ![b',1]) y
   -- compare infDist with HD (finiteness from the previous lemma)
-  have hfin : EMetric.hausdorffEdist (segment01 a b) (segment01 a' b') ≠ ⊤ :=
+  have hfin : hausdorffEDist (segment01 a b) (segment01 a' b') ≠ ⊤ :=
     hausdorffEdist_ne_top_segment01 a b a' b'
   have h_le : infDist y (segment01 a' b' : Set (Fin 2 → ℝ)) ≤ hausdorffDist (segment01 a b) (segment01 a' b') :=
     infDist_le_hausdorffDist_of_mem (x := y) (s := segment01 a b) (t := segment01 a' b') hy hfin
@@ -417,8 +417,8 @@ theorem close_points_in_approx {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)}
     simpa [eq_comm, dist_comm] using hp_eq
   -- Finiteness of the Hausdorff edistance (nonempty + bounded).
   have hfin :
-      EMetric.hausdorffEdist (K : Set (Fin 2 → ℝ)) (Pₙ n) ≠ ⊤ := by
-    refine hausdorffEdist_ne_top_of_nonempty_of_bounded
+      hausdorffEDist (K : Set (Fin 2 → ℝ)) (Pₙ n) ≠ ⊤ := by
+    refine hausdorffEDist_ne_top_of_nonempty_of_bounded
       K.nonempty (Pₙ n).nonempty (K.toCompacts.isCompact.isBounded) ((Pₙ n).toCompacts.isCompact.isBounded)
   -- `infDist ≤ HD ≤ dist of NonemptyCompacts`
   have h_le : infDist k (Pₙ n) ≤ hausdorffDist (K : Set (Fin 2 → ℝ)) (Pₙ n) := by
@@ -460,7 +460,7 @@ If each `Pₙ ⊆ rectangle` and `Pₙ → K` in `NonemptyCompacts`, then `K ⊆
 theorem limit_subset_rectangle
     {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)} {K : NonemptyCompacts (Fin 2 → ℝ)}
     (h_mem : ∀ (n : ℕ), Pₙ n ∈ P_collection') (h_lim : ∀ ε > 0, ∃ N, ∀ n ≥ N, dist (Pₙ n) K < ε)
-    (fin_dist : ∀ (n : ℕ), EMetric.hausdorffEdist (K : Set (Fin 2 → ℝ)) (Pₙ n) ≠ ⊤) :
+    (fin_dist : ∀ (n : ℕ), hausdorffEDist (K : Set (Fin 2 → ℝ)) (Pₙ n) ≠ ⊤) :
     ↑K ⊆ rectangle := by
   have hP_sub : ∀ n, ↑(Pₙ n) ⊆ rectangle := fun n ↦ (h_mem n).2.1
   intro k' hk'
@@ -512,7 +512,7 @@ theorem exists_segment_in_P_collection' {Pₙ : ℕ → NonemptyCompacts (Fin 2 
 theorem mem_iUnion_segment_of_limit {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)} {K : NonemptyCompacts (Fin 2 → ℝ)}
     (h_mem : ∀ (n : ℕ), Pₙ n ∈ P_collection') (h_lim : ∀ ε > 0, ∃ N, ∀ n ≥ N, dist (Pₙ n) K < ε)
     (h_closed : IsClosed ↑(K : Set (Fin 2 → ℝ)))
-    (fin_dist : ∀ (n : ℕ), EMetric.hausdorffEdist ↑(Pₙ n : Set (Fin 2 → ℝ)) ↑K ≠ ⊤) (pₙ : (k : Fin 2 → ℝ) → k ∈ K → ℕ → Fin 2 → ℝ)
+    (fin_dist : ∀ (n : ℕ), hausdorffEDist ↑(Pₙ n : Set (Fin 2 → ℝ)) ↑K ≠ ⊤) (pₙ : (k : Fin 2 → ℝ) → k ∈ K → ℕ → Fin 2 → ℝ)
     (hpₙ_mem : ∀ (k : Fin 2 → ℝ) (a : k ∈ K) (n : ℕ), pₙ k a n ∈ Pₙ n)
     (h_tendsto : ∀ (k : Fin 2 → ℝ) (hk : k ∈ K), Tendsto (fun n ↦ pₙ k hk n) atTop (𝓝 k)) :
     let A := {p | p ∈ Icc ![-1, -1] ![1, 1] ∧ segment01 (p 0) (p 1) ⊆ ↑K};
@@ -585,8 +585,8 @@ theorem mem_iUnion_segment_of_limit {Pₙ : ℕ → NonemptyCompacts (Fin 2 → 
 
     have hr_le_HD : ∀ j, dist (q j) (r j) ≤ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set (Fin 2 → ℝ)) := by
       intro j
-      have hfin : EMetric.hausdorffEdist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := by
-        simpa [EMetric.hausdorffEdist_comm] using fin_dist (φ j)
+      have hfin : hausdorffEDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := by
+        simpa [hausdorffEDist_comm] using fin_dist (φ j)
       have h_le : Metric.infDist (q j) (K : Set (Fin 2 → ℝ)) ≤ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set (Fin 2 → ℝ)) := by
         apply Metric.infDist_le_hausdorffDist_of_mem
         · exact h_seg_subset_n h_mem pₙ hpₙ_mem k hk (φ j) (hqS j)
@@ -659,14 +659,14 @@ theorem P_collection'_exists_segment_of_diff
 at distance at most `dist K (Pₙ n)`. -/
 theorem exists_mem_Pn_close_to
   {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)} {K : NonemptyCompacts (Fin 2 → ℝ)}
-  (fin_dist : ∀ (n : ℕ), EMetric.hausdorffEdist ↑(Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤) :
+  (fin_dist : ∀ (n : ℕ), hausdorffEDist ↑(Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤) :
     ∀ k ∈ K, ∀ (n : ℕ), ∃ p ∈ Pₙ n, dist p k ≤ dist K (Pₙ n) := by
   intro k hk n
   obtain ⟨p, hp_mem, hp_eq⟩ := (Pₙ n).isCompact.exists_infDist_eq_dist (Pₙ n).nonempty k
   have hpk : dist p k = Metric.infDist k (Pₙ n : Set _) := by
     simpa [eq_comm, dist_comm] using hp_eq
-  have fin : EMetric.hausdorffEdist (K : Set (Fin 2 → ℝ)) (Pₙ n : Set _) ≠ ⊤ := by
-    simpa [EMetric.hausdorffEdist_comm] using fin_dist n
+  have fin : hausdorffEDist (K : Set (Fin 2 → ℝ)) (Pₙ n : Set _) ≠ ⊤ := by
+    simpa [hausdorffEDist_comm] using fin_dist n
   have h_le : Metric.infDist k (Pₙ n : Set _) ≤ Metric.hausdorffDist (K : Set (Fin 2 → ℝ)) (Pₙ n : Set _) := by
     apply Metric.infDist_le_hausdorffDist_of_mem (x := k) (s := (K : Set _)) (t := (Pₙ n : Set _)) hk fin
   have h_dist : dist p k ≤ dist K (Pₙ n) := by
@@ -706,7 +706,7 @@ the segment property: for every `|v| ≤ 1/2` there exist `x₁, x₂ ∈ [-1,1]
 theorem exists_segment_subset_K_of_diff_le_half {Pₙ : ℕ → NonemptyCompacts (Fin 2 → ℝ)} {K : NonemptyCompacts (Fin 2 → ℝ)}
     (h_mem : ∀ (n : ℕ), Pₙ n ∈ P_collection') (h_lim : ∀ ε > 0, ∃ N, ∀ n ≥ N, dist (Pₙ n) K < ε)
     (h_closed : IsClosed (K : Set (Fin 2 → ℝ)))
-    (fin_dist : ∀ (n : ℕ), EMetric.hausdorffEdist ↑(Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤) :
+    (fin_dist : ∀ (n : ℕ), hausdorffEDist ↑(Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤) :
     ∀ v, |v| ≤ 1 / 2 → ∃ x₁ x₂, x₁ ∈ Icc (-1) 1 ∧ x₂ ∈ Icc (-1) 1 ∧ x₂ - x₁ = v ∧ segment01 x₁ x₂ ⊆ ↑K := by
   intro v hv
   have h_exists : ∀ n, ∃ x : Fin 2 → ℝ, x ∈ Icc ![-1, -1] ![1, 1] ∧ (x 1) - (x 0) = v ∧ segment01 (x 0) (x 1) ⊆ Pₙ n := by
@@ -791,8 +791,8 @@ theorem exists_segment_subset_K_of_diff_le_half {Pₙ : ℕ → NonemptyCompacts
     have hr_le_HD : ∀ j, dist (q j) (r j) ≤ hausdorffDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set _) := by
       intro j
       have hfin :
-          EMetric.hausdorffEdist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := by
-        simpa [EMetric.hausdorffEdist_comm] using fin_dist (φ j)
+          hausdorffEDist (Pₙ (φ j) : Set (Fin 2 → ℝ)) (K : Set (Fin 2 → ℝ)) ≠ ⊤ := by
+        simpa [hausdorffEDist_comm] using fin_dist (φ j)
       have h_le :=
         Metric.infDist_le_hausdorffDist_of_mem (hqP j) hfin
       simpa [hr_eq j] using h_le
@@ -818,13 +818,13 @@ theorem P_collection'_IsClosed : IsClosed P_collection' := by
   rw [Metric.tendsto_atTop] at h_lim
   have hPn_bdd (n : ℕ) : IsBounded (Pₙ n : Set (Fin 2 → ℝ)) := P_collection.isBounded (h_mem n)
   have hK_bdd : IsBounded (K : Set (Fin 2 → ℝ)) := (K.toCompacts.isCompact).isBounded
-  have fin_dist (n : ℕ) : EMetric.hausdorffEdist (Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤ :=
-    hausdorffEdist_ne_top_of_nonempty_of_bounded (Pₙ n).nonempty K.nonempty (hPn_bdd n) hK_bdd
+  have fin_dist (n : ℕ) : hausdorffEDist (Pₙ n) (K : Set (Fin 2 → ℝ)) ≠ ⊤ :=
+    hausdorffEDist_ne_top_of_nonempty_of_bounded (Pₙ n).nonempty K.nonempty (hPn_bdd n) hK_bdd
   split_ands
   · exact h_closed
   · apply limit_subset_rectangle h_mem h_lim
     · intro n
-      simpa [EMetric.hausdorffEdist_comm] using fin_dist n
+      simpa [hausdorffEDist_comm] using fin_dist n
   · set A : Set (Fin 2 → ℝ) := { p | p ∈ Icc ![-1,-1] ![1,1] ∧ segment01 (p 0) (p 1) ⊆ (K : Set (Fin 2 → ℝ)) } with hA
     use A
     split_ands
@@ -1199,11 +1199,12 @@ theorem P_collection'_IsClosed : IsClosed P_collection' := by
 
 /-- The space `P_collection'` is complete. -/
 instance CompleteSpace_P_collection' : CompleteSpace P_collection' :=
-  IsClosed.completeSpace_coe P_collection'_IsClosed
+  P_collection'_IsClosed.completeSpace_coe
 
 /-- The space `P_collection'` has the Baire property. -/
+-- Maybe this can be deprecated
 instance BaireSpace_P_collection' : BaireSpace P_collection' :=
-  BaireSpace.of_pseudoEMetricSpace_completeSpace
+  inferInstance
 
 noncomputable section
 
@@ -1337,7 +1338,7 @@ lemma phi_strictAnti : StrictAnti phi := by
   -- Prove on ℝ and cast back
   have : (1 : ℝ) / (b + 2) < 1 / (a + 2) := by
     have pos : (0 : ℝ) < a + 2 := by exact_mod_cast Nat.succ_pos (a + 1)
-    have lt' : (a + 2 : ℝ) < (b + 2 : ℝ) := by exact_mod_cast add_lt_add_right hlt 2
+    have lt' : (a + 2 : ℝ) < (b + 2 : ℝ) := by exact_mod_cast Nat.add_lt_add_right hlt 2
     simpa using one_div_lt_one_div_of_lt pos lt'
   exact this
 
@@ -1351,7 +1352,7 @@ lemma phi_mem_Ioo (n : ℕ) : phi n ∈ Set.Ioo 0 1 := by
 lemma tendsto_phi_zero : Tendsto phi atTop (𝓝 (0 : ℝ≥0)) := by
   -- Prove on `ℝ` and pull back
   have h : Tendsto (fun n : ℕ ↦ (1 : ℝ) / n) atTop (𝓝 0) :=
-    tendsto_const_div_atTop_nhds_zero_nat (1 : ℝ)
+    _root_.tendsto_const_div_atTop_nhds_zero_nat (1 : ℝ) -- reconsider the use of _root_
   have : Tendsto (fun n : ℕ ↦ (1 : ℝ) / (n + 2)) atTop (𝓝 0) := by
     simpa using (tendsto_add_atTop_iff_nat 2).2 h
   simpa using (NNReal.tendsto_coe.1 this)
@@ -1443,7 +1444,7 @@ lemma IsGδ_Pstar
   intro i
   apply isOpen_Pn
   · exact fun n ↦ hφ n
-  · exact fun n r a ↦ zero_le (↑r * φ n)
+  · exact fun n r a ↦ zero_le
   · exact fun n r a ↦ hv1 n r a
 
 lemma Dense_Pn (n : ℕ)
@@ -1548,9 +1549,7 @@ theorem E_set_not_meagre
     (hv1 : ∀ n r, r ∈ Finset.range n → r * φ n ≤ 1) :
     ¬ IsMeagre E_set := by
   intro hM
-  apply IsMeagre.mono at h
-  · exact (Pstar_notMeagre φ hφ hv0 hv1) h
-  · exact hM
+  exact Pstar_notMeagre φ hφ hv0 hv1 (IsMeagre.mono h hM)
 
 /-- The subset of `P_collection'` consisting of sets of total
 Lebesgue volume zero. -/
