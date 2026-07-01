@@ -2519,6 +2519,6 @@ theorem exists_isBesicovitch : ∃ s : Set (Fin 2 → ℝ), IsCompact s ∧ IsBe
   · -- measure zero
     rw [measure_iUnion_null_iff]
     intro k
-    rw [_root_.MeasureTheory.Measure.addHaar_image_linearMap volume, hPvol, mul_zero]
+    rw [Measure.addHaar_image_linearMap volume, hPvol, mul_zero]
 
 #lint
