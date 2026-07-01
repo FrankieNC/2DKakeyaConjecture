@@ -2500,8 +2500,7 @@ theorem exists_isBesicovitch : ∃ s : Set (Fin 2 → ℝ), IsCompact s ∧ IsBe
       fin_cases i
       · show x₂ = x₁ + v
         linarith [hdiff]
-      · show (1 : ℝ) = 0 + 1
-        norm_num
+      · simp
     -- its image is a segment in direction `(besicovitchMatrix k).mulVec ![v, 1]`
     set L := Matrix.toLin' (besicovitchMatrix k) with hL
     have hmulVec : (besicovitchMatrix k).mulVec ![v, 1] = L ![v, 1] :=
