@@ -201,25 +201,28 @@ lemma exists_segment01_subset_rectangle :
       simp_all [rectangle, Pi.le_def, Fin.forall_fin_two]
     exact convex_rectangle.segment_subset hL hR
 
+@[simp] lemma rectangleCompacts_coe :
+    (rectangleCompacts : Set (Fin 2 → ℝ)) = rectangle := rfl
+
 /-- `𝒫` is nonempty: the rectangle itself (as a compact nonempty set) satisfies
 all clauses of the definition. -/
 theorem nonempty_kornerCompacts : (kornerCompacts).Nonempty := by
   refine ⟨rectangleCompacts, ?_⟩
   split_ands
   · -- (closedness)
-    simpa using isClosed_rectangle
+    rw [rectangleCompacts_coe]; exact isClosed_rectangle
   · -- (contained in the rectangle: trivial for the rectangle itself)
-    intro x hx
-    simpa using hx
+    rw [rectangleCompacts_coe]
   · -- (i) union-of-segments representation
     refine ⟨Icc ![-1,-1] ![1,1], ?_, ?_⟩
     · intro p hp
       exact hp
     · -- equality from the two inclusions above
-      simpa using rectangle_eq_iUnion_segment01
+      rw [rectangleCompacts_coe]; exact rectangle_eq_iUnion_segment01
   · -- (ii) spanning property for all `|v| ≤ 1/2`
     intro v hv
-    simpa using exists_segment01_subset_rectangle v hv
+    rw [rectangleCompacts_coe]
+    exact exists_segment01_subset_rectangle v hv
 
 /-- Any set in `kornerCollection` is non‑empty: the segment guaranteed by the
 definition already gives a point. -/
@@ -603,7 +606,10 @@ theorem mem_iUnion_segment_of_limit {Pₙ : ℕ → NonemptyCompacts (Fin 2 → 
     have hk_closure : k ∈ closure L := by
       rw [mem_closure_iff_infDist_zero]
       · exact h_k_zero
-      · simpa [segment01] using (show (segment ℝ ![x_lim 0, 0] ![x_lim 1, 1]).Nonempty from ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩)
+      · rw [hL]
+        simpa [segment01] using
+          (show (segment ℝ ![x_lim 0, 0] ![x_lim 1, 1]).Nonempty from
+            ⟨![x_lim 0, 0], left_mem_segment _ _ _⟩)
     simpa [hL_closed.closure_eq] using hk_closure
 
 /--  If `Pₙ ∈ kornerCompacts`, then for every slope `v` with `|v| ≤ 1/2`,
@@ -1597,11 +1603,12 @@ lemma exists_grid_point_dist_le {M : ℕ} (hM0 : 0 < M) {w : ℝ} (hw : |w| ≤ 
   have hfl1 : (⌊(w + 1/2) * M⌋₊ : ℝ) ≤ (w + 1/2) * M := Nat.floor_le hz0
   have hfl2 : (w + 1/2) * M < (⌊(w + 1/2) * M⌋₊ : ℝ) + 1 := Nat.lt_floor_add_one _
   refine ⟨⟨n, hnM⟩, ?_⟩
+  have hval : (((⟨n, hnM⟩ : Fin M) : ℝ)) = (n : ℝ) := rfl
+  rw [hval]
   rcases le_or_gt ⌊(w + 1/2) * M⌋₊ (M - 1) with hc | hc
   · have hne : (n : ℝ) = (⌊(w + 1/2) * M⌋₊ : ℝ) := by rw [hn, min_eq_left hc]
-    have hexp : w - (-(1/2) + (((⟨n, hnM⟩ : Fin M) : ℝ) + 1/2) / M)
+    have hexp : w - (-(1/2) + ((n : ℝ) + 1/2) / M)
         = ((w + 1/2) * M - ((⌊(w + 1/2) * M⌋₊ : ℝ) + 1/2)) / M := by
-      show w - (-(1/2) + ((n : ℝ) + 1/2) / M) = _
       rw [hne]
       field_simp
       ring
@@ -1624,8 +1631,7 @@ lemma exists_grid_point_dist_le {M : ℕ} (hM0 : 0 < M) {w : ℝ} (hw : |w| ≤ 
       rw [hne]
       push_cast [Nat.cast_sub hM0]
       ring
-    have hexp : w - (-(1/2) + (((⟨n, hnM⟩ : Fin M) : ℝ) + 1/2) / M) = (1/2) / M := by
-      show w - (-(1/2) + ((n : ℝ) + 1/2) / M) = _
+    have hexp : w - (-(1/2) + ((n : ℝ) + 1/2) / M) = (1/2) / M := by
       rw [hcast, hw12]
       field_simp
       ring
@@ -2498,11 +2504,13 @@ theorem exists_isBesicovitch : ∃ s : Set (Fin 2 → ℝ), IsCompact s ∧ IsBe
         norm_num
     -- its image is a segment in direction `(besicovitchMatrix k).mulVec ![v, 1]`
     set L := Matrix.toLin' (besicovitchMatrix k) with hL
+    have hmulVec : (besicovitchMatrix k).mulVec ![v, 1] = L ![v, 1] :=
+      (Matrix.toLin'_apply _ _).symm
     have himg : L '' segment01 x₁ x₂
         = segment ℝ (L ![x₁, 0]) (L ![x₁, 0] + (besicovitchMatrix k).mulVec ![v, 1]) := by
-      rw [hseg]
+      rw [hseg, hmulVec]
       have h := image_segment ℝ L.toAffineMap ![x₁, 0] (![x₁, 0] + ![v, 1])
-      rw [LinearMap.coe_toAffineMap, map_add, Matrix.toLin'_apply] at h
+      rw [LinearMap.coe_toAffineMap, map_add] at h
       simpa using h
     obtain ⟨x, hx⟩ := exists_segment_subset_of_smul ht hwt (L ![x₁, 0])
     refine ⟨x, hx.trans ?_⟩

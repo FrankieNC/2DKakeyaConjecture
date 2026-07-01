@@ -95,7 +95,10 @@ theorem isKakeya_iff_sub_unit [Nontrivial E] {s : Set E} :
   · intro h_kakeya v hv
     -- Case: `v = 0`
     by_cases h₀ : v = 0
-    · simpa [h₀] using h_kakeya.nonempty
+    · obtain ⟨x, hx⟩ := h_kakeya.nonempty
+      refine ⟨x, ?_⟩
+      simp only [h₀, add_zero, segment_same, Set.singleton_subset_iff]
+      exact hx
     -- Case: `v ≠ 0`
     · set u := ‖v‖⁻¹ • v with hu -- rescale `v` to a unit vector `u`
       have h₁ : ‖v‖ ≠ 0 := by

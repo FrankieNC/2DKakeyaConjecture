@@ -221,10 +221,13 @@ lemma hausdorffMeasure_eq_iSup₂_deltaHausdorffWith_isOpen {d : ℝ} {S : Set X
   obtain rfl | hd := hd.eq_or_lt
   · refine iSup₂_mono' fun r hr ↦ ?_
     refine ⟨r / 2, by positivity, ?_⟩
-    convert deltaHausdorffWith_isOpen S 0 (r / 2) 2 (by positivity) (by simp) le_rfl using 2
-    · norm_cast
-      rw [mul_div_cancel₀ _ (by simp)]
-    simp
+    have hb := deltaHausdorffWith_isOpen S 0 (r / 2) 2 (by positivity) (by simp) le_rfl
+    have hcast : ((2 : ℝ≥0) : ℝ≥0∞) * ((r / 2 : ℝ≥0) : ℝ≥0∞) = (r : ℝ≥0∞) := by
+      rw [← ENNReal.coe_mul]
+      norm_cast
+      rw [mul_div_cancel₀ _ (by norm_num : (2 : ℝ≥0) ≠ 0)]
+    rw [hcast, ENNReal.rpow_zero, one_mul] at hb
+    exact hb
   apply le_of_forall_mul_le
   intro ε hε
   rw [mul_comm]
@@ -232,11 +235,15 @@ lemma hausdorffMeasure_eq_iSup₂_deltaHausdorffWith_isOpen {d : ℝ} {S : Set X
   refine iSup₂_mono' fun r hr ↦ ?_
   have h₂ : 0 < ε ^ (-d⁻¹) * r := mul_pos (NNReal.rpow_pos (by positivity)) hr
   use ε ^ (-d⁻¹) * r, h₂
-  convert deltaHausdorffWith_isOpen S d _ (ε ^ d⁻¹) h₂ (NNReal.one_lt_rpow hε (by positivity)) hd.le
-  · norm_cast
-    rw [← mul_assoc, ← NNReal.rpow_add (by positivity)]
+  have hb := deltaHausdorffWith_isOpen S d (ε ^ (-d⁻¹) * r) (ε ^ d⁻¹) h₂
+    (NNReal.one_lt_rpow hε (by positivity)) hd.le
+  have hrad : ((ε ^ d⁻¹ : ℝ≥0) : ℝ≥0∞) * ((ε ^ (-d⁻¹) * r : ℝ≥0) : ℝ≥0∞) = (r : ℝ≥0∞) := by
+    rw [← ENNReal.coe_mul, ← mul_assoc, ← NNReal.rpow_add (by positivity)]
     simp
-  · rw [ENNReal.coe_rpow_of_nonneg _ (by positivity), ENNReal.rpow_inv_rpow hd.ne']
+  have hfac : ((ε ^ d⁻¹ : ℝ≥0) : ℝ≥0∞) ^ d = (ε : ℝ≥0∞) := by
+    rw [ENNReal.coe_rpow_of_nonneg _ (by positivity), ENNReal.rpow_inv_rpow hd.ne']
+  rw [hrad, hfac] at hb
+  exact hb
 
 lemma tendsto_deltaHausdorffWith_isOpen_hausdorffMeasure {d : ℝ} {S : Set X} (hd : 0 ≤ d) :
     Tendsto (deltaHausdorffWith {U | IsOpen U} d · S) (𝓝[>] 0) (𝓝 (μH[d] S)) := by
