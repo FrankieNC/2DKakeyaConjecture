@@ -104,10 +104,11 @@ private lemma staircase_band_card_le {K : ℕ} {h σ v ε y : ℝ} (hh0 : 0 < h)
       exact hj.2
     have hpair : ∀ j ∈ F, ∀ j' ∈ F, (j : ℕ) ≤ (j' : ℕ) + 1 := by
       intro j hj j' hj'
-      have h1 := (hmem j hj).1
-      have h2 := (hmem j' hj').2
-      have hjj' : (j : ℝ) < (j' : ℝ) + 2 := lt_of_mul_lt_mul_left (by linarith) hh0.le
-      have : (j : ℕ) < (j' : ℕ) + 2 := by exact_mod_cast hjj'
+      have hjj' : (j : ℕ) < (j' : ℕ) + 2 := by
+        rw [← Nat.cast_lt (α := ℝ)]
+        push_cast
+        linarith [lt_of_mul_lt_mul_left
+          (show h * (j:ℝ) < h * ((j':ℝ) + 2) by linarith [(hmem j hj).1, (hmem j' hj').2]) hh0.le]
       omega
     have hne : (F.image Fin.val).Nonempty := hFne.image _
     set m := (F.image Fin.val).min' hne with hm
@@ -134,7 +135,6 @@ private lemma staircase_mem_band {K : ℕ} (hK : 0 < K) {h v ε y : ℝ} (hh0 : 
   intro m
   have habs := abs_le.1 hy
   have hz0 : 0 ≤ (y - (v - ε)) / h := div_nonneg (by linarith [habs.1]) hh0.le
-  have hzK : y - (v - ε) ≤ (K : ℝ) * h := by rw [hKh]; linarith [habs.2]
   have hfl1 : (⌊(y - (v - ε)) / h⌋₊ : ℝ) * h ≤ y - (v - ε) := by
     have h1 := mul_le_mul_of_nonneg_right (Nat.floor_le hz0) hh0.le
     rwa [div_mul_cancel₀ _ hh0.ne'] at h1
@@ -214,31 +214,24 @@ private theorem exists_staircase_fan (c s : Fin n → ℝ) (ρ v ε : ℝ) (K : 
     set m : ℕ := min ⌊(y - (v - ε)) / h⌋₊ (K - 1) with hn
     clear_value m
     have hyn : |y - μ ⟨m, hnK⟩| ≤ ε / K := by
-      have hεK : ε / K = h / 2 := by rw [hh]; ring
-      have hμn : μ ⟨m, hnK⟩ = v - ε + ((m : ℝ) + 1 / 2) * h := by simp [hμ]
-      rw [hμn, hεK, abs_le]
+      rw [show μ ⟨m, hnK⟩ = v - ε + ((m : ℝ) + 1 / 2) * h by simp [hμ],
+        show ε / K = h / 2 by rw [hh]; ring, abs_le]
       constructor <;> linarith [hband.1, hband.2]
     refine ⟨⟨m, hnK⟩, mem_openBox.2 ⟨?_, ?_⟩⟩
     · -- horizontal membership: each coordinate
       intro i
       have hkey : |(c i + (y - v) * t i) - γ ⟨m, hnK⟩ i| < w := by
-        have hexp : (c i + (y - v) * t i) - γ ⟨m, hnK⟩ i
-            = (y - μ ⟨m, hnK⟩) * t i + (μ ⟨m, hnK⟩ - v) * (t i - s i) := by
-          simp only [hγ]; ring
-        rw [hexp]
+        rw [show (c i + (y - v) * t i) - γ ⟨m, hnK⟩ i
+            = (y - μ ⟨m, hnK⟩) * t i + (μ ⟨m, hnK⟩ - v) * (t i - s i) by simp only [hγ]; ring]
         calc |(y - μ ⟨m, hnK⟩) * t i + (μ ⟨m, hnK⟩ - v) * (t i - s i)|
             ≤ |(y - μ ⟨m, hnK⟩) * t i| + |(μ ⟨m, hnK⟩ - v) * (t i - s i)| := abs_add_le _ _
           _ = |y - μ ⟨m, hnK⟩| * |t i| + |μ ⟨m, hnK⟩ - v| * |t i - s i| := by
               rw [abs_mul, abs_mul]
           _ ≤ (ε / K) * 2 + ε * ρ := by
-              have h1 : |y - μ ⟨m, hnK⟩| * |t i| ≤ (ε / K) * 2 :=
-                mul_le_mul hyn (htabs i) (abs_nonneg _) (by positivity)
-              have h2 : |μ ⟨m, hnK⟩ - v| * |t i - s i| ≤ ε * ρ :=
-                mul_le_mul (hμv _) (ht' i) (abs_nonneg _) hε.le
-              linarith
-          _ < w := by
-              have h3 : (ε / K) * 2 = 2 * ε / K := by ring
-              rw [hw, h3]; linarith
+              gcongr ?_ + ?_
+              · exact mul_le_mul hyn (htabs i) (abs_nonneg _) (by positivity)
+              · exact mul_le_mul (hμv _) (ht' i) (abs_nonneg _) hε.le
+          _ < w := by rw [hw, show (ε / K) * 2 = 2 * ε / K by ring]; linarith
       rw [abs_lt] at hkey
       simp only [stripPoint_castSucc]
       exact ⟨by linarith [hkey.1], by linarith [hkey.2]⟩
@@ -284,31 +277,22 @@ private lemma fan_anchor_horizontal_bound {η v x₁ s' t y σ' : ℝ} (hη : 0 
     (hv₀ : 0 ≤ v) (hv₁ : v ≤ 1) (hx₁ : |x₁| ≤ 1) (hs'half : |s'| ≤ 1/2)
     (hσs' : σ' = (1 - η) * s') (htσ : |t - σ'| ≤ η) (hyv : |y - v| ≤ 1) :
     |(1 - η) * x₁ + v * σ' + (y - v) * t - (x₁ + y * s')| ≤ 3 * η := by
-  have hexp : (1 - η) * x₁ + v * σ' + (y - v) * t - (x₁ + y * s')
-      = -(η * x₁) + (y - v) * (t - s') - v * η * s' := by
-    rw [hσs']; ring
-  rw [hexp]
   have hts' : |t - s'| ≤ 3 * η / 2 := by
-    have h1 : |σ' - s'| = η * |s'| := by
+    have hσ : |σ' - s'| = η * |s'| := by
       rw [hσs', show (1 - η) * s' - s' = -(η * s') by ring, abs_neg, abs_mul, abs_of_pos hη]
-    have h2 := abs_sub_le t σ' s'
-    rw [h1] at h2
-    linarith [mul_le_mul_of_nonneg_left hs'half hη.le]
-  have htri : |(-(η * x₁) + (y - v) * (t - s') - v * η * s')|
-      ≤ |η * x₁| + |(y - v) * (t - s')| + |v * η * s'| := by
-    simpa [sub_eq_add_neg] using abs_add_three (-(η * x₁)) ((y - v) * (t - s')) (-(v * η * s'))
-  have e1 : |η * x₁| ≤ η := by
-    rw [abs_mul, abs_of_pos hη]
-    exact mul_le_of_le_one_right hη.le hx₁
-  have e2 : |(y - v) * (t - s')| ≤ 3 * η / 2 := by
-    rw [abs_mul]
-    exact (mul_le_of_le_one_left (abs_nonneg _) hyv).trans hts'
-  have e3 : |v * η * s'| ≤ η / 2 := by
-    rw [abs_mul, abs_mul, abs_of_nonneg hv₀, abs_of_pos hη]
-    have h1 : v * η * |s'| ≤ 1 * η * (1/2) :=
-      mul_le_mul (mul_le_mul hv₁ le_rfl hη.le zero_le_one) hs'half (abs_nonneg s') (by positivity)
-    linarith
-  linarith
+    nlinarith [abs_sub_le t σ' s', hσ, mul_le_mul_of_nonneg_left hs'half hη.le]
+  calc |(1 - η) * x₁ + v * σ' + (y - v) * t - (x₁ + y * s')|
+      = |-(η * x₁) + (y - v) * (t - s') - v * η * s'| := by rw [hσs']; congr 1; ring
+    _ ≤ |η * x₁| + |(y - v) * (t - s')| + |v * η * s'| := by
+        simpa [sub_eq_add_neg] using abs_add_three (-(η * x₁)) ((y - v) * (t - s')) (-(v * η * s'))
+    _ ≤ η + 3 * η / 2 + η / 2 := by
+        gcongr
+        · rw [abs_mul, abs_of_pos hη]; exact mul_le_of_le_one_right hη.le hx₁
+        · rw [abs_mul]; exact (mul_le_of_le_one_left (abs_nonneg _) hyv).trans hts'
+        · rw [abs_mul, abs_mul, abs_of_nonneg hv₀, abs_of_pos hη]
+          nlinarith [mul_le_mul (mul_le_mul hv₁ le_rfl hη.le zero_le_one) hs'half
+            (abs_nonneg s') (by positivity : (0:ℝ) ≤ 1 * η)]
+    _ = 3 * η := by ring
 
 /-- The one-dimensional grid: midpoints of `M` equal subdivisions of `[-1/2, 1/2]`
 approximate every point of `[-1/2, 1/2]` to within `1/(2M)`. -/
@@ -328,23 +312,22 @@ private lemma exists_grid_point_dist_le {M : ℕ} (hM0 : 0 < M) {w : ℝ} (hw : 
   have hval : (((⟨nn, hnM⟩ : Fin M) : ℝ)) = (nn : ℝ) := rfl
   rw [hval]
   rcases le_or_gt ⌊(w + 1/2) * M⌋₊ (M - 1) with hc | hc
-  · have hne : (nn : ℝ) = (⌊(w + 1/2) * M⌋₊ : ℝ) := by rw [hn, min_eq_left hc]
-    have hexp : w - (-(1/2) + ((nn : ℝ) + 1/2) / M)
+  · have hexp : w - (-(1/2) + ((nn : ℝ) + 1/2) / M)
         = ((w + 1/2) * M - ((⌊(w + 1/2) * M⌋₊ : ℝ) + 1/2)) / M := by
-      rw [hne]; field_simp; ring
+      rw [show (nn : ℝ) = (⌊(w + 1/2) * M⌋₊ : ℝ) by rw [hn, min_eq_left hc]]
+      field_simp; ring
     rw [hexp, abs_div, abs_of_pos hM0',
       div_le_div_iff₀ hM0' (by positivity : (0:ℝ) < 2 * M)]
     have hnum : |(w + 1/2) * M - ((⌊(w + 1/2) * M⌋₊ : ℝ) + 1/2)| ≤ 1/2 := by
       rw [abs_le]; constructor <;> linarith
     linarith [mul_le_mul_of_nonneg_right hnum (by positivity : (0:ℝ) ≤ 2 * M)]
   · have hge : (M : ℝ) ≤ (⌊(w + 1/2) * M⌋₊ : ℝ) := Nat.cast_le.2 (by omega)
-    have hwM : (w + 1/2) * M = M := le_antisymm hzM (hge.trans hfl1)
     have hw12 : w = 1/2 := by
-      have := mul_right_cancel₀ hM0'.ne' (hwM.trans (one_mul (M : ℝ)).symm)
-      linarith
+      have hwM : (w + 1/2) * M = M := le_antisymm hzM (hge.trans hfl1)
+      linarith [mul_right_cancel₀ hM0'.ne' (hwM.trans (one_mul (M : ℝ)).symm)]
     have hcast : (nn : ℝ) = (M : ℝ) - 1 := by
-      have hne : nn = M - 1 := min_eq_right (by omega)
-      rw [hne]; push_cast [Nat.cast_sub hM0]; ring
+      rw [hn, min_eq_right (by omega : M - 1 ≤ ⌊(w + 1/2) * M⌋₊)]
+      push_cast [Nat.cast_sub hM0]; ring
     have hexp : w - (-(1/2) + ((nn : ℝ) + 1/2) / M) = (1/2) / M := by
       rw [hcast, hw12]; field_simp; ring
     rw [hexp, abs_of_nonneg (by positivity),
@@ -381,10 +364,9 @@ private theorem exists_segment_net (P : kornerCompacts (n := n)) {δ : ℝ} (hδ
     exact subset_biUnion_of_mem (u := fun q => fibreSegment q.1 q.2) (hfA x hx)
   · intro p hp
     obtain ⟨x, hxt, hdist⟩ := mem_iUnion₂.1 (htcover hp)
-    have hxt' : x ∈ t := hxt
-    exact ⟨f x hxt',
-      Finset.mem_image.2 ⟨⟨x, hxt'⟩, Finset.mem_attach _ _, rfl⟩,
-      x, hfx x hxt', (mem_ball.1 hdist).le⟩
+    exact ⟨f x hxt,
+      Finset.mem_image.2 ⟨⟨x, hxt⟩, Finset.mem_attach _ _, rfl⟩,
+      x, hfx x hxt, (mem_ball.1 hdist).le⟩
 
 /-! ## Fan anchors -/
 
@@ -422,15 +404,12 @@ private theorem exists_fan_anchors (P : kornerCompacts (n := n)) {η : ℝ} (hη
     have hlo : 1 / (2 * (M₀ : ℝ)) ≤ (((g i : ℕ) : ℝ) + 1/2) / M₀ := by
       rw [div_le_div_iff₀ (by positivity) hM₀0']; linarith [mul_nonneg hm0 hM₀0'.le]
     have hhi : (((g i : ℕ) : ℝ) + 1/2) / M₀ ≤ 1 - 1 / (2 * (M₀ : ℝ)) := by
-      rw [div_le_iff₀ hM₀0']
-      have hexp : (1 - 1 / (2 * (M₀ : ℝ))) * M₀ = M₀ - 1/2 := by field_simp
-      rw [hexp]; linarith
+      rw [div_le_iff₀ hM₀0', show (1 - 1 / (2 * (M₀ : ℝ))) * M₀ = M₀ - 1/2 by field_simp]
+      linarith
     simp only [hσ']
     rw [abs_le]; constructor <;> linarith
-  have hσ'half : ∀ g i, |σ' g i| ≤ (1 - η) / 2 := by
-    intro g i
-    have h1 := hσ'abs g i
-    linarith [hηM₀]
+  have hσ'half : ∀ g i, |σ' g i| ≤ (1 - η) / 2 := fun g i => by
+    linarith [hσ'abs g i, hηM₀]
   have hσ'norm : ∀ g, ‖σ' g‖ ≤ 1/2 := fun g =>
     pi_norm_le_of_abs_le (by norm_num) fun i => by
       have hp : (0:ℝ) ≤ 1 / (2 * (M₀:ℝ)) := by positivity
@@ -446,19 +425,16 @@ private theorem exists_fan_anchors (P : kornerCompacts (n := n)) {η : ℝ} (hη
         linarith [hσ'half g i]
     obtain ⟨x₁, x₂, hx₁, hx₂, hdiff, hseg⟩ := kornerFamily_exists_fibreSegment P.2 hnorm
     refine ⟨x₁, x₂, hx₁, hx₂, fun i => ?_, hseg⟩
-    have := congrFun hdiff i
-    simpa using this
+    simpa using congrFun hdiff i
   choose x₁ x₂ hx₁ hx₂ hslope hseg using hanchor
-  have hx2eq : ∀ g i, (1 - η) * x₂ g i = (1 - η) * x₁ g i + σ' g i := by
-    intro g i
+  have hx2eq : ∀ g i, (1 - η) * x₂ g i = (1 - η) * x₁ g i + σ' g i := fun g i => by
     have h := hslope g i
     rw [eq_div_iff h1η.ne'] at h
     linarith [h]
   refine ⟨M₀, fun g i => (1 - η) * x₁ g i + v * σ' g i, σ', ?_, ?_, ?_, ?_, ?_⟩
   · -- slopes bounded away from 1
     intro g i
-    have := hσ'half g i
-    linarith
+    linarith [hσ'half g i]
   · -- fan segments stay in strip
     intro g t ht
     have htσ : ∀ i, |t i - σ' g i| ≤ η := fun i => by
@@ -469,15 +445,12 @@ private theorem exists_fan_anchors (P : kornerCompacts (n := n)) {η : ℝ} (hη
       exact mul_le_of_le_one_right h1η.le ((norm_le_pi_norm (x g) i).trans (hx g))
     constructor
     · refine pi_norm_le_of_abs_le (by norm_num) fun i => ?_
-      have hexp : (1 - η) * x₁ g i + v * σ' g i - v * t i
-          = (1 - η) * x₁ g i + v * (σ' g i - t i) := by ring
-      simp only [hexp]
+      rw [show (1 - η) * x₁ g i + v * σ' g i - v * t i
+          = (1 - η) * x₁ g i + v * (σ' g i - t i) by ring]
       exact abs_add_mul_le_one (habs x₁ hx₁ i) hv₀ hv₁ (by rw [abs_sub_comm]; exact htσ i)
     · refine pi_norm_le_of_abs_le (by norm_num) fun i => ?_
-      have hexp : (1 - η) * x₁ g i + v * σ' g i + (1 - v) * t i
-          = (1 - η) * x₂ g i + (1 - v) * (t i - σ' g i) := by
-        rw [hx2eq]; ring
-      simp only [hexp]
+      rw [show (1 - η) * x₁ g i + v * σ' g i + (1 - v) * t i
+          = (1 - η) * x₁ g i + σ' g i + (1 - v) * (t i - σ' g i) by ring, ← hx2eq]
       exact abs_add_mul_le_one (habs x₂ hx₂ i) (by linarith) (by linarith) (htσ i)
   · -- fan points within 3η of P
     intro g p hp
@@ -497,10 +470,8 @@ private theorem exists_fan_anchors (P : kornerCompacts (n := n)) {η : ℝ} (hη
     · apply hseg g
       rw [fibreSegment_eq_image]
       refine ⟨y, mem_Icc.2 hy, ?_⟩
-      have hfun : (fun i => x₁ g i + y * ((x₂ g) i - (x₁ g) i)) = (fun i => x₁ g i + y * s' i) := by
-        funext i
-        rw [hslope g i, hs']
-      simp only [hfun]
+      simp only [show (fun i => x₁ g i + y * ((x₂ g) i - (x₁ g) i))
+        = (fun i => x₁ g i + y * s' i) from by funext i; rw [hslope g i, hs']]
     · have hyv : |y - v| ≤ 1 := by
         rw [abs_le]; constructor <;> linarith [hy.1, hy.2]
       rw [dist_pi_le_iff (by positivity)]
@@ -620,15 +591,11 @@ private lemma hasThinCover_fans_union_net {M₀ : ℕ} (hn : 0 < n)
       intro p hp hpv
       rw [Sum.elim_inl] at hp
       exact h2 p hp (hband _ (fan_last_mem_Icc hp) hpv)
-    · have hq1 := (hntP q.1 q.2).1
-      have hq2 := (hntP q.1 q.2).2
-      have hs2 : ∀ i, |(fun i => q.1.2 i - q.1.1 i) i| + 0 ≤ 2 := by
-        intro i
+    · have hs2 : ∀ i, |(fun i => q.1.2 i - q.1.1 i) i| + 0 ≤ 2 := fun i => by
         rw [add_zero]
-        have h1 : |q.1.1 i| ≤ 1 := (norm_le_pi_norm q.1.1 i).trans hq1
-        have h2 : |q.1.2 i| ≤ 1 := (norm_le_pi_norm q.1.2 i).trans hq2
-        have : |q.1.2 i - q.1.1 i| ≤ |q.1.2 i| + |q.1.1 i| := abs_sub _ _
-        simpa using (le_trans this (by linarith))
+        have h1 : |q.1.1 i| ≤ 1 := (norm_le_pi_norm q.1.1 i).trans (hntP q.1 q.2).1
+        have h2 : |q.1.2 i| ≤ 1 := (norm_le_pi_norm q.1.2 i).trans (hntP q.1 q.2).2
+        exact (abs_sub (q.1.2 i) (q.1.1 i)).trans (by linarith)
       obtain ⟨lo, hi, cc, dd, h1, h2, h3⟩ :=
         exists_staircase_fan (fun i => q.1.1 i + v * (q.1.2 i - q.1.1 i))
           (fun i => q.1.2 i - q.1.1 i) 0 v εw N (σ := εw / N) le_rfl hs2 hεwpos hN0 hσ0 le_rfl
