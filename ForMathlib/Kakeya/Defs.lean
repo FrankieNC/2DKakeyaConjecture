@@ -81,7 +81,8 @@ theorem isKakeya_iff_norm_le_one [Nontrivial E] {s : Set E} :
     rw [segment_eq_image']
     exact ⟨‖v‖, ⟨norm_nonneg v, hv⟩, by simp [smul_inv_smul₀ (norm_ne_zero_iff.mpr h₀)]⟩
 
-/-- A **Besicovitch set** in a real normed measure space (with its Lebesgue / additive Haar
-measure `volume`) is a Kakeya set of measure zero. -/
+/-- A **Besicovitch set** is a Kakeya set which is `volume`-null.  In the intended instances
+(such as `EuclideanSpace ℝ (Fin n)` with its Lebesgue / additive Haar measure) this is the
+classical notion. -/
 def IsBesicovitch [MeasureTheory.MeasureSpace E] (s : Set E) : Prop :=
   IsKakeya s ∧ MeasureTheory.volume s = 0
