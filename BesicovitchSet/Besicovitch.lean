@@ -6,7 +6,7 @@ Authors: Francesco Nishanil Chotuck, Bhavik Mehta
 
 import BesicovitchSet.KakeyaSet
 import Mathlib.Algebra.Order.Ring.Star
-import Mathlib.Data.Real.StarOrdered
+import Mathlib.Algebra.Order.Star.Real
 import Mathlib.GroupTheory.MonoidLocalization.Basic
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
@@ -2134,7 +2134,7 @@ lemma dense_kornerResidual : Dense kornerResidual := by
   · exact dense_thinCoverSet i.1.2.1 i.1.2.2 (by positivity)
 
 theorem not_isMeagre_kornerResidual : ¬ IsMeagre kornerResidual := by
-  haveI : Nonempty kornerCompacts := by
+  have : Nonempty kornerCompacts := by
     rcases nonempty_kornerCompacts with ⟨P, hP⟩
     exact ⟨P, hP⟩
   exact not_isMeagre_of_isGδ_of_dense isGδ_kornerResidual dense_kornerResidual
@@ -2219,7 +2219,7 @@ theorem nullSlices_subset_nullVolume : nullSlices ⊆ nullVolume := by
       have hvol :
           (volume : Measure (ℝ × ℝ)) = (volume : Measure ℝ).prod (volume : Measure ℝ) := by
         simpa using Measure.volume_eq_prod ℝ ℝ
-      simpa [hvol, Set.preimage, Set.mem_setOf_eq] using
+      simpa [hvol, Set.preimage, Set.mem_ofPred_eq] using
         (Measure.prod_apply_symm
           (μ := (volume : Measure ℝ)) (ν := (volume : Measure ℝ))
           (s := S) hS_meas)
