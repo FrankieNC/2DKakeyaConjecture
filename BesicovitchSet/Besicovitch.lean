@@ -2091,7 +2091,7 @@ lemma HasThinCover.toReal_volume_hSlice_le {P : Set (Fin 2 → ℝ)} {v ε u : �
     · have hset : {x : ℝ | (![x, u] : Fin 2 → ℝ) ∈ openRect (a j) (b j) (c j) (d j)}
           = (∅ : Set ℝ) := by
         ext x
-        simp only [mem_empty_iff_false, iff_false, mem_setOf_eq]
+        simp only [mem_empty_iff_false, iff_false, mem_ofPred_eq]
         rintro ⟨-, h1⟩
         exact hj (by simpa using h1)
       rw [hset]
@@ -2203,8 +2203,8 @@ theorem nullSlices_subset_nullVolume : nullSlices ⊆ nullVolume := by
   intro P hP
   have hSlices :
       ∀ y ∈ Icc (0 : ℝ) 1, volume (hSlice (↑↑P : Set (Fin 2 → ℝ)) y) = 0 := by
-    simpa [nullSlices, mem_setOf_eq] using hP
-  simp_rw [nullVolume, mem_setOf_eq, ← MeasureTheory.setLIntegral_one]
+    simpa [nullSlices, mem_ofPred_eq] using hP
+  simp_rw [nullVolume, mem_ofPred_eq, ← MeasureTheory.setLIntegral_one]
   have hMP := (MeasureTheory.measurePreserving_finTwoArrow (volume : Measure ℝ))
   rw [← MeasureTheory.Measure.volume_eq_prod, ← MeasureTheory.volume_pi] at hMP
   rw [← hMP.symm.setLIntegral_comp_preimage_emb]
