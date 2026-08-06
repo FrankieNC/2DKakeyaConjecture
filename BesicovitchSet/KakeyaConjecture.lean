@@ -281,7 +281,7 @@ theorem exists_Gδ_superset_hausdorffMeasure_eq
       · simp only [ne_eq, (h₂φ i).1.ne', not_false_eq_true]
     conv_lhs at h₂ =>
       simp only [deltaHausdorffWith]
-    simp only [iInf_lt_iff, Set.mem_setOf_eq] at h₂
+    simp only [iInf_lt_iff, Set.mem_ofPred_eq] at h₂
     exact h₂
   choose U hCov hDiam hOpen hU using hc
   let G : Set _ := ⋂ i, ⋃ j, U i j
